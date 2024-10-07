@@ -55,7 +55,6 @@ def parse_offers(offers:str)->List[Offers]:
 
     obj = {}
     for iter in range(len(items)):
-      print(f'item => {keys[iter]}, {items[iter]}')
       obj[keys[iter]] = items[iter]
     obj = Offers(**obj)
     result.append(obj)
@@ -91,7 +90,9 @@ def vrl(gpu_name:str):
   offer_conditions.append(f'gpu_name in {_gpu_name}')
   offers_str = api.search_offers(query=' '.join(offer_conditions), order=order)
   offers = parse_offers(offers_str)
-  print(f'**{offers}**')
+
+  for offer in offers:
+    print(f'\033[92m{offer.Model} \033[93m${offer.price}\033[0m - \033[90m{offer}')
 
 
 
