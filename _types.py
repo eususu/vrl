@@ -1,4 +1,12 @@
+import logging
 from pydantic import BaseModel
+
+class VRLOptions(BaseModel):
+  title:str # project title,
+  lm_parameter:int # 7B, 11B, ...
+  favor_gpu:str
+  rl_optimization:str # DPO, OROP, ...
+  disk:int
 
 
 class Colors:
@@ -33,6 +41,7 @@ class Offer(BaseModel):
 
   def print_summary(self):
     print(f'{Colors.CYAN}{self.Model} {Colors.YELLOW}${self.price}{Colors.DEFAULT} - {Colors.GREY}{self}{Colors.DEFAULT}')
+    logging.info(f'{Colors.CYAN}{self.Model} {Colors.YELLOW}${self.price}{Colors.DEFAULT} - {Colors.GREY}{self}{Colors.DEFAULT}')
     
 
 
