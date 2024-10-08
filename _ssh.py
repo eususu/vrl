@@ -36,7 +36,7 @@ class MySession(asyncssh.SSHClientSession):
   def connection_lost(self, exc: Exception | None) -> None:
     print('ssh session closed', exc)
 
-def ssh_exec_command_by_api(url:str, cmdlist:List[str], environment:dict):
+def ssh_exec_command_by_api(url:str, cmdlist:List[str], environment:dict=None):
   user, host, port = _extract_ssh_url(url)
   logging.info(f'SSH command info ({user}@{host}:{port})')
   async def run():

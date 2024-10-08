@@ -9,6 +9,8 @@ vastai = "*"
 peft = "*"
 trl = "*"
 asyncssh = "*"
+accelerate = "*"
+paramiko = "*"
 
 [dev-packages]
 
