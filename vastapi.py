@@ -4,11 +4,16 @@ import os
 import re
 import ast
 import socket
+import subprocess
 from typing import List, Tuple
+import paramiko
 from vastai import VastAI
 
 from _exceptions import AlreadyExistInstance
-from _types import Instance, Offer, VRLOptions
+from _ssh import ssh_exec_command_by_api
+from _types import Colors, Instance, Offer, VRLOptions
+
+import asyncssh
 
 CIDFILE='RUNNING.CID'
 api_key = None
@@ -23,13 +28,20 @@ def read_cid()->int:
       return int(running_cid)
   except Exception as e:
     raise Exception("no cid file")
-def read_ssh_key()->int:
+def read_ssh_key():
+  ssh_key=None
+  pkey=None
   try:
     with open(f'{home}/.ssh/id_ed25519.pub', 'r') as file:
       ssh_key = file.read().strip()
-      return ssh_key
+
+    pkey_path = f'{home}/.ssh/id_ed25519'
+    pkey = paramiko.Ed25519Key.from_private_key_file(pkey_path)
+
   except Exception as e:
-    raise Exception("no cid file")
+    raise Exception("no ssh pub or pkey", e)
+
+  return ssh_key, pkey
 
 def retrieve_gpu_model(gpu_name:str)->str:
   list = None
@@ -73,10 +85,12 @@ def parse_offers(offers:str)->List[Offer]:
 class VastAPI():
   api:VastAI
   options:VRLOptions
+  ssh_key:str
 
   def __init__(self, options:VRLOptions, api_key:str=api_key):
     self.options = options
     self.api = VastAI(api_key=api_key)
+    self.ssh_key = read_ssh_key()
 
   @property
   def label(self):
@@ -96,7 +110,6 @@ class VastAPI():
       instance = Instance.from_str(row)
       instances.append(instance)
 
-    logging.info(f'{len(instances)} are founded')
     return instances
 
   def get_instance(self, cid:str)->Instance:
@@ -110,7 +123,7 @@ class VastAPI():
   def __check_duplicated_label(self):
     try:
       with open(CIDFILE, 'r') as file:
-        self.running_cid = file.read().strip()
+        self.running_cid = int(file.read().strip())
     except FileNotFoundError:
       logging.debug(f'{CIDFILE} 파일이 없습니다.')
       self.running_cid = None
@@ -118,7 +131,7 @@ class VastAPI():
 
     instances = self.get_instances()
     for instance in instances:
-      if instance.Label == self.label and instance.ID == self.running_cid:
+      if instance.Label == self.label or instance.ID == self.running_cid:
         logging.info(instance)
         raise AlreadyExistInstance(f"CID:{self.running_cid}, Label:{self.label} is already exists")
 
@@ -183,11 +196,26 @@ class VastAPI():
     logging.info('remove CID file')
     os.remove(CIDFILE)
 
-  def test(self, cid:int, ssh_key:str):
+  def shell(self, cmd:str):
+    try:
+      self.__check_duplicated_label()
+    except Exception as e:
+      pass
+    cid = self.running_cid
+    res = self.api.attach_ssh(instance_id=cid, ssh_key=self.ssh_key)
+    print(res)
+    url = self.api.ssh_url(id=cid)
+    print(url)
+
+    ssh_exec_command_by_api(url, [cmd])
+    
+
+  def init_ssh(self, cid:int, ssh_key:str, pkey:str):
     res = self.api.attach_ssh(instance_id=cid, ssh_key=ssh_key)
     print(res)
+    url = self.api.ssh_url(id=cid)
+    print(url)
 
-    url = self.api.scp_url(id=cid)
     print(url)
     scheme_and_etc = url.split('://')
     user_and_host = scheme_and_etc[1].split('@')
@@ -205,13 +233,14 @@ class VastAPI():
     print(f'port is {port}')
 
 
+
     import paramiko
     from scp import SCPClient
 
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-    ssh.connect(host, port=port, username=user, password=ssh_key)
+    ssh.connect(host, port=port, username=user, pkey=pkey)
 
 
     local_file_path = './train'
@@ -223,24 +252,14 @@ class VastAPI():
     print ("copy file is done")
 
     print ("exec is begin~~~~~~~~~~~~~~")
+
     environment = {
-      'HF_TOKEN': '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'
+      'HF_TOKEN': os.environ['HF_TOKEN']
     }
 
-    commands = ['pip install trl peft', 'python3 train/train.py']
-    contents = "\n".join(commands)
-    stdin, stdout, stderr = ssh.exec_command('find train', environment=environment)
-    print(stdout.read().decode())
-    print(stderr.read().decode())
-
-    stdin, stdout, stderr = ssh.exec_command('python3 train/train.py', environment=environment)
-    #stdin, stdout, stderr = ssh.exec_command('/root/run.sh', environment=environment)
-    print(stdout.read().decode())
-    print(stderr.read().decode())
-
+    commands = ['find train', 'pip install accelerate trl peft', 'nvidia-smi', 'accelerate launch train/train.py']
+    ssh_exec_command_by_api(url=url, cmdlist=commands, environment=environment)
     print ("exec is done~~~~~~~~~~~~~~")
-
-    pass
 
 if __name__ == "__main__":
   options = VRLOptions(
@@ -253,5 +272,5 @@ if __name__ == "__main__":
   api = VastAPI(options)
 
   cid = read_cid()
-  ssh_key = read_ssh_key()
-  api.test(cid=cid, ssh_key=ssh_key)
+  ssh_key, pkey = read_ssh_key()
+  api.init_ssh(cid=cid, ssh_key=ssh_key, pkey=pkey)

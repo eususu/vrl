@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from _exceptions import AlreadyExistInstance
 from _types import Instance, Offer, VRLOptions
-from vastapi import VastAPI
+from vastapi import VastAPI, read_ssh_key
 
 
 
@@ -38,6 +38,9 @@ class VRL():
     logging.info(f'[16bit float] Assume GPU RAM is {ram_in_16} GB')
     logging.info(f'[8bit float] Assume GPU RAM is {ram_in_8} GB')
 
+  def shell(self, cmd:str):
+    return self.api.shell(cmd=cmd)
+
   def train(self):
     try:
       self.api.search_offer()
@@ -57,10 +60,11 @@ class VRL():
       import time
       time.sleep(3)
 
-    logging.info('instance is ready')
+    logging.info('## instance is ready')
+    ssh_key, pkey = read_ssh_key()
+    self.api.init_ssh(cid=cid, ssh_key=ssh_key, pkey=pkey)
 
-    self.api.destroy_instance()
-
+    #self.api.destroy_instance()
 
 
 if __name__ == "__main__":
@@ -72,4 +76,11 @@ if __name__ == "__main__":
     disk=200,
   )
   vrl = VRL(options)
-  vrl.train()
+
+  import sys
+  if len(sys.argv) > 1 and sys.argv[1] == 'shell':
+    cmd = sys.argv[2]
+    ssh_cmd = vrl.shell(cmd)
+    print(ssh_cmd)
+  else:
+    vrl.train()
