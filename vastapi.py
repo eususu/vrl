@@ -4,7 +4,7 @@ import os
 import re
 import ast
 import socket
-from typing import List
+from typing import List, Tuple
 from vastai import VastAI
 
 from _exceptions import AlreadyExistInstance
@@ -15,7 +15,6 @@ api_key = None
 home = os.path.expanduser("~")
 with open(f'{home}/.vast_api_key', 'r') as file:
   api_key = file.read().replace('\n', '')
-
 
 def read_cid()->int:
   try:
@@ -160,7 +159,7 @@ class VastAPI():
       ID=self.selected_offer.ID,
       label=self.label,
       disk=self.options.disk,
-      image="vllm/vllm-openai:latest"
+      image="vllm/vllm-openai:latest",
       )
 
     logging.debug(f'create instance result={result}')
@@ -185,6 +184,9 @@ class VastAPI():
     os.remove(CIDFILE)
 
   def test(self, cid:int, ssh_key:str):
+    res = self.api.attach_ssh(instance_id=cid, ssh_key=ssh_key)
+    print(res)
+
     url = self.api.scp_url(id=cid)
     print(url)
     scheme_and_etc = url.split('://')
@@ -194,6 +196,9 @@ class VastAPI():
     host_and_port = user_and_host[1].split(':')
     host = host_and_port[0]
     port = int(host_and_port[1])
+
+
+    print(f'ssh -p {port} {host}')
 
     print(f'user is {user}')
     print(f'host is {host}')
@@ -209,27 +214,31 @@ class VastAPI():
     ssh.connect(host, port=port, username=user, password=ssh_key)
 
 
-    local_file_paths = ['trl.py']
+    local_file_path = './train'
 
     remote_base_path = '/root'
+    print ("begin copy file")
     with SCPClient(ssh.get_transport()) as scp:
-      for file in local_file_paths:
-        scp.put(file, remote_path=f'{remote_base_path}/{file}')
+      scp.put(local_file_path, remote_path=f'{remote_base_path}/', recursive=True)
     print ("copy file is done")
 
     print ("exec is begin~~~~~~~~~~~~~~")
-    #stdin, stdout, stderr = ssh.exec_command('ls -al /root')
-    stdin, stdout, stderr = ssh.exec_command('pip install vastai')
+    environment = {
+      'HF_TOKEN': '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'
+    }
+
+    commands = ['pip install trl peft', 'python3 train/train.py']
+    contents = "\n".join(commands)
+    stdin, stdout, stderr = ssh.exec_command('find train', environment=environment)
     print(stdout.read().decode())
     print(stderr.read().decode())
-    stdin, stdout, stderr = ssh.exec_command('python3 trl.py')
+
+    stdin, stdout, stderr = ssh.exec_command('python3 train/train.py', environment=environment)
+    #stdin, stdout, stderr = ssh.exec_command('/root/run.sh', environment=environment)
     print(stdout.read().decode())
     print(stderr.read().decode())
 
     print ("exec is done~~~~~~~~~~~~~~")
-    #res = self.api.attach_ssh(instance_id=cid, ssh_key=ssh_key)
-    #ssh_url = self.api.ssh_url(id=cid)
-    #print(ssh_url)
 
     pass
 

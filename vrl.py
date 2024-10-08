@@ -23,6 +23,21 @@ class VRL():
     self.api = VastAPI(options=options)
     self.options = options
 
+    self.__assume_gpu_ram()
+
+  def __assume_gpu_ram(self):
+    BILLIONS = 1000000000
+    IN_GB = 1024 * 1024 * 1024
+    ram = self.options.lm_parameter * BILLIONS
+
+
+    ram_in_32 = int(ram * (4 + 20) / IN_GB)
+    ram_in_16 = int(ram * (2 + 20) / IN_GB)
+    ram_in_8 = int(ram * (1 + 20) / IN_GB)
+    logging.info(f'[32bit float] Assume GPU RAM is {ram_in_32} GB')
+    logging.info(f'[16bit float] Assume GPU RAM is {ram_in_16} GB')
+    logging.info(f'[8bit float] Assume GPU RAM is {ram_in_8} GB')
+
   def train(self):
     try:
       self.api.search_offer()
