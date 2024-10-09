@@ -5,6 +5,7 @@ class VRLOptions(BaseModel):
   title:str # project title,
   lm_parameter:int # 7B, 11B, ...
   favor_gpu:str
+  num_gpus:int=1
   rl_optimization:str # DPO, OROP, ...
   disk:int
 

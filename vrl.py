@@ -41,8 +41,17 @@ class VRL():
   def shell(self, cmd:str):
     return self.api.shell(cmd=cmd)
 
+  def search(self):
+    try:
+      self.api.search_offer()
+    except AlreadyExistInstance as ae:
+      pass
+
   def train(self):
     try:
+      if self.api.running_cid is not None:
+        raise AlreadyExistInstance()
+
       self.api.search_offer()
       self.api.create_instance()
     except AlreadyExistInstance as ae:
@@ -63,14 +72,22 @@ class VRL():
     logging.info('## instance is ready')
     ssh_key, pkey = read_ssh_key()
     self.api.init_ssh(cid=cid, ssh_key=ssh_key, pkey=pkey)
+    self.api.launch_jobs()
 
     #self.api.destroy_instance()
+  def search(self):
+    self.api.search_offer()
+  def sshurl(self):
+    self.api.sshurl()
+  def stop(self):
+    self.api.destroy_instance()
 
 
 if __name__ == "__main__":
   options = VRLOptions(
     title="susu_dpo_001",
     lm_parameter=7,
+    num_gpus=2,
     rl_optimization="DPO",
     favor_gpu='A100',
     disk=200,
@@ -78,9 +95,16 @@ if __name__ == "__main__":
   vrl = VRL(options)
 
   import sys
-  if len(sys.argv) > 1 and sys.argv[1] == 'shell':
-    cmd = sys.argv[2]
-    ssh_cmd = vrl.shell(cmd)
-    print(ssh_cmd)
+  if len(sys.argv) > 1:
+    if sys.argv[1] == 'shell':
+      cmd = sys.argv[2] if len(sys.argv)>2 else ""
+      ssh_cmd = vrl.shell(cmd)
+      print(ssh_cmd)
+    if sys.argv[1] == 'search':
+      vrl.search()
+    if sys.argv[1] == 'sshurl':
+      vrl.sshurl()
+    if sys.argv[1] == 'stop':
+      vrl.stop()
   else:
     vrl.train()

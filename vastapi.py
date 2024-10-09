@@ -86,11 +86,19 @@ class VastAPI():
   api:VastAI
   options:VRLOptions
   ssh_key:str
+  ssh_pkey:str
+  running_cid:str
 
   def __init__(self, options:VRLOptions, api_key:str=api_key):
     self.options = options
     self.api = VastAI(api_key=api_key)
-    self.ssh_key = read_ssh_key()
+    self.ssh_key, self.ssh_pkey = read_ssh_key()
+
+
+    try:
+      self.__check_duplicated_label()
+    except Exception as e:
+      pass
 
   @property
   def label(self):
@@ -139,8 +147,6 @@ class VastAPI():
     os.remove(CIDFILE)
 
   def search_offer(self):
-    self.__check_duplicated_label()
-
     _gpu_name = retrieve_gpu_model(self.options.favor_gpu)
     order='-inet_down'
     order='+dph'
@@ -152,7 +158,7 @@ class VastAPI():
     # 요구하는 gpu ram에 따라 장치를 선택하게 해야함
     offer_conditions.append('inet_down > 800')
     offer_conditions.append('gpu_ram>=42')
-    offer_conditions.append('num_gpus=1')
+    offer_conditions.append(f'num_gpus={self.options.num_gpus}')
     offer_conditions.append(f'gpu_name in {_gpu_name}')
     offers_str = self.api.search_offers(query=' '.join(offer_conditions), order=order)
     offers = parse_offers(offers_str)
@@ -196,12 +202,14 @@ class VastAPI():
     logging.info('remove CID file')
     os.remove(CIDFILE)
 
-  def shell(self, cmd:str):
-    try:
-      self.__check_duplicated_label()
-    except Exception as e:
-      pass
+  def sshurl(self):
     cid = self.running_cid
+    url = self.api.ssh_url(id=cid)
+    print(f'ssh {url}')
+
+  def shell(self, cmd:str):
+    cid = self.running_cid
+    logging.info(f'ssh pub_key: {self.ssh_key}')
     res = self.api.attach_ssh(instance_id=cid, ssh_key=self.ssh_key)
     print(res)
     url = self.api.ssh_url(id=cid)
@@ -212,11 +220,11 @@ class VastAPI():
 
   def init_ssh(self, cid:int, ssh_key:str, pkey:str):
     res = self.api.attach_ssh(instance_id=cid, ssh_key=ssh_key)
+    # injection can be completed immediately
     print(res)
     url = self.api.ssh_url(id=cid)
     print(url)
 
-    print(url)
     scheme_and_etc = url.split('://')
     user_and_host = scheme_and_etc[1].split('@')
 
@@ -225,13 +233,9 @@ class VastAPI():
     host = host_and_port[0]
     port = int(host_and_port[1])
 
-
-    print(f'ssh -p {port} {host}')
-
     print(f'user is {user}')
     print(f'host is {host}')
     print(f'port is {port}')
-
 
 
     import paramiko
@@ -253,11 +257,18 @@ class VastAPI():
 
     print ("exec is begin~~~~~~~~~~~~~~")
 
+  def launch_jobs(self):
+    url = self.api.ssh_url(id=self.running_cid)
     environment = {
       'HF_TOKEN': os.environ['HF_TOKEN']
     }
 
-    commands = ['find train', 'pip install accelerate trl peft', 'nvidia-smi', 'accelerate launch train/train.py']
+    commands = [
+      'find train',
+      'pip install accelerate trl peft xformers',
+      'nvidia-smi',
+      'echo $HF_TOKEN',
+      f'HF_TOKEN={os.environ["HF_TOKEN"]} accelerate launch --num_processes 1 train/train.py ']
     ssh_exec_command_by_api(url=url, cmdlist=commands, environment=environment)
     print ("exec is done~~~~~~~~~~~~~~")
 
@@ -266,6 +277,7 @@ if __name__ == "__main__":
     title="susu_dpo_001",
     lm_parameter=7,
     rl_optimization="DPO",
+    num_gpus=2,
     favor_gpu='A100',
     disk=200,
   )

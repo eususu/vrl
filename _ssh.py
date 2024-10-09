@@ -49,6 +49,32 @@ def ssh_exec_command_by_api(url:str, cmdlist:List[str], environment:dict=None):
 
     async with asyncssh.connect(host, **ssh_info) as conn:
       for cmd in cmdlist:
+        if len(cmd) == 0:
+          async def read_output(proc):
+            try:
+              while True:
+                line = await proc.stdout.readline()
+                if not line:
+                  break
+                print(line, end='')
+            except Exception as e:
+              print(e)
+
+          async def send_input(proc):
+            try:
+              while True:
+                command = await asyncio.get_event_loop().run_in_executor(None, input, '$ ')
+                proc.stdin.write(command + '\n')
+            except Exception as e:
+              print(e)
+
+          async with conn.create_process() as proc:
+            await asyncio.gather(
+              read_output(proc),
+              send_input(proc)
+            )
+          break
+
         chan, session = await conn.create_session(MySession, cmd, env=environment)
         await chan.wait_closed()
 
