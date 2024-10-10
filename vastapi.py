@@ -202,10 +202,43 @@ class VastAPI():
     logging.info('remove CID file')
     os.remove(CIDFILE)
 
+    sshjson = f'ssh_{self.running_cid}.json' # vastai generate it.
+
+    os.remove(sshjson)
+
   def sshurl(self):
     cid = self.running_cid
     url = self.api.ssh_url(id=cid)
     print(f'ssh {url}')
+  def scp(self, remote, local):
+    cid = self.running_cid
+    url = self.api.ssh_url(id=cid)
+    print(f'ssh {url}')
+
+    scheme_and_etc = url.split('://')
+    user_and_host = scheme_and_etc[1].split('@')
+
+    user = user_and_host[0]
+    host_and_port = user_and_host[1].split(':')
+    host = host_and_port[0]
+    port = int(host_and_port[1])
+
+    print(f'user is {user}')
+    print(f'host is {host}')
+    print(f'port is {port}')
+    import paramiko
+    from scp import SCPClient
+
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    ssh_key, pkey = read_ssh_key()
+    ssh.connect(host, port=port, username=user, pkey=pkey)
+
+    print ("begin copy file")
+    with SCPClient(ssh.get_transport()) as scp:
+      scp.get(remote, local_path=local)
+    print ("copy file is done")
 
   def shell(self, cmd:str):
     cid = self.running_cid
@@ -255,29 +288,27 @@ class VastAPI():
       scp.put(local_file_path, remote_path=f'{remote_base_path}/', recursive=True)
     print ("copy file is done")
 
-    print ("exec is begin~~~~~~~~~~~~~~")
 
-  def launch_jobs(self):
+  def launch_jobs(self, jobs:List[str]):
+    if not jobs:
+      return
+
     url = self.api.ssh_url(id=self.running_cid)
     environment = {
       'HF_TOKEN': os.environ['HF_TOKEN']
     }
 
-    commands = [
-      'find train',
-      'pip install accelerate trl peft xformers',
-      'nvidia-smi',
-      'echo $HF_TOKEN',
-      f'HF_TOKEN={os.environ["HF_TOKEN"]} accelerate launch --num_processes 1 train/train.py ']
-    ssh_exec_command_by_api(url=url, cmdlist=commands, environment=environment)
+    print ("exec is begin~~~~~~~~~~~~~~")
+    ssh_exec_command_by_api(url=url, cmdlist=jobs, environment=environment)
     print ("exec is done~~~~~~~~~~~~~~")
 
+"""
 if __name__ == "__main__":
   options = VRLOptions(
     title="susu_dpo_001",
     lm_parameter=7,
     rl_optimization="DPO",
-    num_gpus=2,
+    num_gpus=1,
     favor_gpu='A100',
     disk=200,
   )
@@ -286,3 +317,5 @@ if __name__ == "__main__":
   cid = read_cid()
   ssh_key, pkey = read_ssh_key()
   api.init_ssh(cid=cid, ssh_key=ssh_key, pkey=pkey)
+
+"""

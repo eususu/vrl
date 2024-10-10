@@ -1,7 +1,6 @@
 all:
 	python3 vrl.py
 
-
 search:
 	python3 -m vrl search
 
@@ -13,6 +12,12 @@ sshurl:
 
 shell:
 	python3 -m vrl shell nvidia-smi
+
+eval:
+	python3 -m vrl logickor
+
+scp:
+	python3 -m vrl scp ./LogicKor/evaluated/default.jsonl .
 
 stop:
 	python3 -m vrl stop
