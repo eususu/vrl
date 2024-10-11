@@ -1,0 +1,4 @@
+bitsandbyts
+trl
+peft
+wandb
