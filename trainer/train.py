@@ -1,17 +1,23 @@
 import logging
-import os
+import sys
 from datasets import Dataset, concatenate_datasets
 import wandb
 
 
 from .dpo_train import dpo_train
+from .simpo_train import simpo_train
 from .chat_template.detect import find_chat_template
 from .preprocess import preprocess
 from .config import get_config
 
 model_info, unsloth_config, wandb_config, datasets, training_args, lora_config = get_config()
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
 
 ###############################################################################################
 
@@ -32,7 +38,8 @@ def train():
         wandb.init(project=wandb_config.project, name=wandb_config.name)
     try:
         # 3단계: 학습 시작
-        dpo_train(ds)
+        #dpo_train(ds)
+        simpo_train(ds)
     finally:
         if wandb_config is not None:
             wandb.finish()

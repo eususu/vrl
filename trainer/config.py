@@ -4,6 +4,8 @@ from pydantic import BaseModel
 from trl import DPOConfig
 from peft import LoraConfig
 
+from .extend.simpo.simpo_config import SimPOConfig
+
 class ModelConfig(BaseModel):
     base_name:str
     load_in_n_bit:int
@@ -31,6 +33,7 @@ class UnslothConfig(BaseModel):
     temporary_location:str="_unsloth_temporary_saved_buffers"
 
 OFFLINE=True
+OFFLINE=False
 def get_config():
     # 학습 대상 모델 기본 설정
     model_info = ModelConfig(
@@ -95,6 +98,32 @@ def get_config():
         hub_strategy='checkpoint',
         hub_private_repo=True, # 저장소 private
         )
+    training_args = SimPOConfig(
+        './simpo_result',
+        max_steps=10,
+        max_length = 128, #4096+512,
+        max_prompt_length = 64, #4096,
+        beta=0.1,
+        warmup_ratio=0.1,
+        num_train_epochs=1,
+        per_device_train_batch_size=1,
+        gradient_accumulation_steps=4,
+        gradient_checkpointing=True,
+        remove_unused_columns=False,
+        bf16=True,
+        logging_steps=1,
+        seed=42,
+        optim="paged_adamw_32bit",
+        learning_rate=5e-7,
+        lr_scheduler_type='cosine',
+        dataset_num_proc=os.cpu_count() - 1, # dataset 크기가 커지면 꼭 필요함
+        report_to="wandb",
+        run_name="vrl_user",
+        push_to_hub=True if OFFLINE else False,
+        hub_model_id='aiyets/test',
+        hub_strategy='checkpoint',
+        hub_private_repo=True, # 저장소 private
+    )
 
     lora_config = LoraConfig(
         r=8,

@@ -1,5 +1,8 @@
 
+import os
+
 def unsloth_load():
+    os.environ["XFORMERS_FLASH_ATTENTION"] = "1"
     from ..config import get_config
 
     model_info, unsloth_config, wandb_config, datasets, training_args, lora_config = get_config()

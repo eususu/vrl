@@ -1,21 +1,25 @@
 import os
 
+from .extend.simpo.simpo_trainer import SimPOTrainer
+from .extend.simpo.simpo_config import SimPOConfig
+
 from .config import get_config
 from datasets import Dataset
 from .loader.load import load
 
-from trl import DPOTrainer, DPOConfig
+from trl import DPOTrainer
 
 model_info, unsloth_config, wandb_config, datasets, training_args, lora_config = get_config()
 
 
-def dpo_train(ds:Dataset):
-  if not isinstance(training_args, DPOConfig):
-    raise ValueError(f"input config is bad instance (need DPOConfig but {training_args})")
+def simpo_train(ds:Dataset):
+
+  if not isinstance(training_args, SimPOConfig):
+    raise ValueError(f"input config is bad instance (need SimPOConfig but {training_args})")
 
   model, tokenizer = load()
 
-  trainer = DPOTrainer(model,
+  trainer = SimPOTrainer(model,
     args=training_args,
     train_dataset=ds,
     tokenizer=tokenizer,
@@ -23,3 +27,4 @@ def dpo_train(ds:Dataset):
 
   trainer.train()
   trainer.save_model()
+
