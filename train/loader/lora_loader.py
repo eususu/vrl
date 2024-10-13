@@ -1,12 +1,16 @@
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model
-from train.config import get_config
 
 
-model_info, unsloth_config, wandb_config, datasets, training_args, lora_config = get_config()
 
 def lora_load():
+    from train.config import get_config
+    model_info, unsloth_config, wandb_config, datasets, training_args, lora_config = get_config()
+    if not isinstance(lora_config, LoraConfig):
+        raise Exception("lora_config does not instance of LoraConfig")
+
+
     quantization_config = BitsAndBytesConfig(
         load_in_4bit=True if model_info.load_in_n_bit == 4 else False,
         load_in_8bit=True if model_info.load_in_n_bit == 8 else False,

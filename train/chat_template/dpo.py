@@ -1,3 +1,4 @@
+import logging
 import pandas as pd
 from tqdm import tqdm
 from .types import ChatTemplate, Conversation, DPOFormat, DPOFormat_argilla, Prompt
@@ -24,6 +25,19 @@ def _is_dpo_format(data:dict):
 
 class ChatTemplate_DPO(ChatTemplate):
     target_type:None
+    chat_template_name:str
+
+    def __init__(self, chat_template_name:str):
+
+        supported_chat_templates = [
+            'gemma'
+        ]
+
+        if not chat_template_name in supported_chat_templates:
+            raise Exception(f"unsupported chat template({chat_template_name})")
+
+        self.chat_template_name = chat_template_name
+        logging.info(f"initialized with target template name={self.chat_template_name}")
 
     def to_dataset(self, name:str, origin:Dataset)->Dataset:
 
@@ -36,6 +50,7 @@ class ChatTemplate_DPO(ChatTemplate):
 
     def _to_dataset_DPOFormat(self, name:str, origin:Dataset)->Dataset:
         list = []
+        target_template = self.chat_template_name
 
         import os
         ds_path = f"temp_dataset_{name.replace('/','_')}"
@@ -51,9 +66,9 @@ class ChatTemplate_DPO(ChatTemplate):
             chosen = [dummy_message, {'role': 'assistant', 'content': row['chosen']}]
             rejected = [dummy_message, {'role': 'assistant', 'content': row['rejected']}]
 
-            new_prompt = apply_template(Conversation(messages=prompt), target_template='gemma')
-            new_chosen = apply_template(Conversation(messages=chosen), target_template='gemma').removeprefix(dummy)
-            new_rejected = apply_template(Conversation(messages=rejected), target_template='gemma').removeprefix(dummy)
+            new_prompt = apply_template(Conversation(messages=prompt), target_template=target_template)
+            new_chosen = apply_template(Conversation(messages=chosen), target_template=target_template).removeprefix(dummy)
+            new_rejected = apply_template(Conversation(messages=rejected), target_template=target_template).removeprefix(dummy)
 
             list.append({'prompt': new_prompt, 'chosen': new_chosen, 'rejected': new_rejected})
             
@@ -63,6 +78,7 @@ class ChatTemplate_DPO(ChatTemplate):
 
     def _to_dataset_DPOFormat_agrilla(self, name:str, origin:Dataset)->Dataset:
         list = []
+        target_template = self.chat_template_name
 
         import os
         ds_path = f"temp_dataset_{name.replace('/','_')}"
@@ -71,16 +87,16 @@ class ChatTemplate_DPO(ChatTemplate):
             
 
         dummy_message = {'role': 'user', 'content': 'this is a dummy message'}
-        dummy = apply_template(Conversation(messages=[dummy_message]), target_template=None)
+        dummy = apply_template(Conversation(messages=[dummy_message]), target_template=target_template)
         for row in tqdm(origin):
 
             prompt = row['chosen'][:-1]
             chosen = [dummy_message, row['chosen'][-1]]
             rejected = [dummy_message, row['rejected'][-1]]
 
-            new_prompt = apply_template(Conversation(messages=prompt), target_template=None)
-            new_chosen = apply_template(Conversation(messages=chosen), target_template=None).removeprefix(dummy)
-            new_rejected = apply_template(Conversation(messages=rejected), target_template=None).removeprefix(dummy)
+            new_prompt = apply_template(Conversation(messages=prompt), target_template=target_template)
+            new_chosen = apply_template(Conversation(messages=chosen), target_template=target_template).removeprefix(dummy)
+            new_rejected = apply_template(Conversation(messages=rejected), target_template=target_template).removeprefix(dummy)
 
             list.append({'prompt': new_prompt, 'chosen': new_chosen, 'rejected': new_rejected})
             

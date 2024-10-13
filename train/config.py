@@ -13,7 +13,7 @@ class WandBConfig(BaseModel):
     name:str
 
 class UnslothConfig(BaseModel):
-    model_name:str
+    base_model_name:str
     r:int
     target_modules:List[str]
     lora_alpha:int
@@ -39,7 +39,7 @@ def get_config():
     )
 
     unsloth_config = UnslothConfig(
-        model_name=model_info.base_name,
+        base_model_name=model_info.base_name,
         r                   = 16,
         target_modules      = ["q_proj", "k_proj", "v_proj", "o_proj",
                                "gate_proj", "up_proj", "down_proj"],
@@ -66,6 +66,7 @@ def get_config():
 
     training_args = DPOConfig(
         './dpo_result',
+        max_steps=10,
         max_length = 128, #4096+512,
         max_prompt_length = 64, #4096,
         beta=0.1,
@@ -85,7 +86,7 @@ def get_config():
         report_to=None if wandb_config is None else "wandb",
         run_name="vrl_user",
         push_to_hub=True,
-        hub_model_id='aiyets/gemma-2-2b-it-dpo-dual_001',
+        hub_model_id='aiyets/test',
         hub_strategy='checkpoint',
         )
 

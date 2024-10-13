@@ -17,7 +17,6 @@ class DPOFormat_argilla(BaseModel):
 
 
 class ChatTemplate():
-
     def detect(self, data:dict):
         pass
     def to_dataset(self, name:str, origin:Dataset)->Dataset:

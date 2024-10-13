@@ -2,13 +2,8 @@ from datasets import load_dataset, DatasetDict,Dataset
 from chat_template.types import ChatTemplate
 from chat_template.dpo import ChatTemplate_DPO
 
-
-ct:ChatTemplate = ChatTemplate_DPO()
-
-def detect_dataset_format(data:dict):
-    ct.detect(data)
-
-def preprocess(ds_name:str="aiyets/argilla_dpo-mix-7k-ko")->Dataset:
+def preprocess(ds_name:str, target_template_name:str)->Dataset:
+    ct:ChatTemplate = ChatTemplate_DPO(target_template_name)
     _dataset:DatasetDict = load_dataset(ds_name)
 
     try:

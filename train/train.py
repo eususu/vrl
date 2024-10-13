@@ -54,7 +54,7 @@ def train():
 
     ds_list = []
     for ds_name in datasets:
-        ds=preprocess(ds_name=ds_name)
+        ds=preprocess(ds_name=ds_name, target_template_name='gemma')
         ds_list.append(ds)
     ds = concatenate_datasets(ds_list)
     print(ds)
