@@ -85,7 +85,7 @@ def get_config():
         report_to=None if wandb_config is None else "wandb",
         run_name="vrl_user",
         push_to_hub=True,
-        hub_model_id='aiyets/gemma-2-9b-it-dpo-dual_001',
+        hub_model_id='aiyets/gemma-2-2b-it-dpo-dual_001',
         hub_strategy='checkpoint',
         )
 
