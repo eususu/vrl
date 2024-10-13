@@ -30,14 +30,15 @@ class UnslothConfig(BaseModel):
     loftq_config:dict={}
     temporary_location:str="_unsloth_temporary_saved_buffers"
 
-    pass
-
+OFFLINE=True
 def get_config():
+    # 학습 대상 모델 기본 설정
     model_info = ModelConfig(
         base_name= 'google/gemma-2-2b-it',
         load_in_n_bit= 4,
     )
 
+    # unsloth 설정
     unsloth_config = UnslothConfig(
         base_model_name=model_info.base_name,
         r                   = 16,
@@ -52,18 +53,22 @@ def get_config():
         random_state        = 3407,
         max_seq_length      = 512,
     )
+    # unsloth_config = None
 
+    # WANDB 설정
     wandb_config = WandBConfig(
         project="dpotest",
         name="vrl_user",
     )
-    wandb_config = None
+    if OFFLINE:
+        wandb_config = None
 
     datasets = [
     #'kuotient/orca-math-korean-dpo-pairs',
     'aiyets/argilla_dpo-mix-7k-ko',
     ]
 
+    # TRL 설정
     training_args = DPOConfig(
         './dpo_result',
         max_steps=10,
@@ -83,11 +88,12 @@ def get_config():
         learning_rate=5e-7,
         lr_scheduler_type='cosine',
         dataset_num_proc=os.cpu_count() - 1, # dataset 크기가 커지면 꼭 필요함
-        report_to=None if wandb_config is None else "wandb",
+        report_to="wandb",
         run_name="vrl_user",
-        push_to_hub=True,
+        push_to_hub=True if OFFLINE else False,
         hub_model_id='aiyets/test',
         hub_strategy='checkpoint',
+        hub_private_repo=True, # 저장소 private
         )
 
     lora_config = LoraConfig(
@@ -99,6 +105,7 @@ def get_config():
         task_type="CAUSAL_LM"
     )
 
+    # dict로 반환하고 싶지만, 직렬화가 허용된 객체가 아니라 이게 최선임
     return (
         model_info,
         unsloth_config,

@@ -3,9 +3,8 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model
 
 
-
 def lora_load():
-    from train.config import get_config
+    from trainer.config import get_config
     model_info, unsloth_config, wandb_config, datasets, training_args, lora_config = get_config()
     if not isinstance(lora_config, LoraConfig):
         raise Exception("lora_config does not instance of LoraConfig")

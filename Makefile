@@ -16,3 +16,7 @@ shell:
 
 stop:
 	python3 -m vrl stop
+
+
+tt:
+	python3 -m trainer.train

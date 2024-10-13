@@ -1,6 +1,6 @@
 
 def unsloth_load():
-    from train.config import get_config
+    from ..config import get_config
 
     model_info, unsloth_config, wandb_config, datasets, training_args, lora_config = get_config()
     if unsloth_config is not None:
