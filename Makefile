@@ -7,8 +7,8 @@ search:
 bash:
 	python3 -m vrl shell
 
-sshurl:
-	python3 -m vrl sshurl
+ssh:
+	python3 -m vrl ssh
 
 shell:
 	python3 -m vrl shell nvidia-smi

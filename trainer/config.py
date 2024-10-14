@@ -74,7 +74,7 @@ def get_config():
     # TRL 설정
     training_args = DPOConfig(
         './dpo_result',
-        max_steps=10,
+        max_steps=50,
         max_length = 128, #4096+512,
         max_prompt_length = 64, #4096,
         beta=0.1,
@@ -98,29 +98,31 @@ def get_config():
         hub_strategy='checkpoint',
         hub_private_repo=True, # 저장소 private
         )
-    training_args = SimPOConfig(
+    atraining_args = SimPOConfig(
         './simpo_result',
-        max_steps=10,
+        hub_model_id='aiyets/test',
+        max_steps=50,
         max_length = 128, #4096+512,
         max_prompt_length = 64, #4096,
-        beta=0.1,
         warmup_ratio=0.1,
         num_train_epochs=1,
         per_device_train_batch_size=1,
         gradient_accumulation_steps=4,
+        seed=42,
+        optim="paged_adamw_32bit",
+        learning_rate=8e-7,
+        beta=10,
+        gamma_beta_ratio=0.5,
+        lr_scheduler_type='cosine',
+        ### 잘 안바꾸는건 뒤에 몰아주기
         gradient_checkpointing=True,
         remove_unused_columns=False,
         bf16=True,
         logging_steps=1,
-        seed=42,
-        optim="paged_adamw_32bit",
-        learning_rate=5e-7,
-        lr_scheduler_type='cosine',
         dataset_num_proc=os.cpu_count() - 1, # dataset 크기가 커지면 꼭 필요함
         report_to="wandb",
         run_name="vrl_user",
         push_to_hub=True if OFFLINE else False,
-        hub_model_id='aiyets/test',
         hub_strategy='checkpoint',
         hub_private_repo=True, # 저장소 private
     )

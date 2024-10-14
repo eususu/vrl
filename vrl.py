@@ -91,8 +91,18 @@ class VRL():
     #self.api.destroy_instance()
   def search(self):
     self.api.search_offer()
-  def sshurl(self):
-    self.api.sshurl()
+  def ssh(self):
+    import subprocess
+
+
+    cmds =[
+      'ssh',
+      self.api.sshurl()
+    ]
+
+    print(cmds)
+
+    subprocess.call(cmds)
   def scp(self, remote:str, local:str):
     self.api.scp(remote, local)
   def logickor(self, model_name:str):
@@ -102,8 +112,7 @@ class VRL():
     self.__init_container(init_commands=init_commands)
 
     commands = [
-      'cd LogicKor && python3 generator.py --model aiyets/gemma-2-9b-it-dpo-1009_full --gpu_devices 0 --model_len 2048',
-      'cd LogicKor && python3 score.py -p evaluated/default.jsonl'
+      'cd LogicKor && python3 cli.py --model aiyets/gemma-2-9b-it-dpo-1009_full -f',
       #'SCP LogicKor/evaluated/*.jsonl .',
     ]
     self.api.launch_jobs(jobs=commands)
@@ -134,8 +143,8 @@ if __name__ == "__main__":
       vrl.scp(remote, local)
     if sys.argv[1] == 'search':
       vrl.search()
-    if sys.argv[1] == 'sshurl':
-      vrl.sshurl()
+    if sys.argv[1] == 'ssh':
+      vrl.ssh()
     if sys.argv[1] == 'stop':
       vrl.stop()
     if sys.argv[1] == 'logickor':

@@ -208,8 +208,10 @@ class VastAPI():
 
   def sshurl(self):
     cid = self.running_cid
-    url = self.api.ssh_url(id=cid)
-    print(f'ssh {url}')
+    url = self.api.ssh_url(id=cid).strip()
+    print(f'ssh url={url}')
+    return url
+
   def scp(self, remote, local):
     cid = self.running_cid
     url = self.api.ssh_url(id=cid)

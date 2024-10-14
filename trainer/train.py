@@ -38,8 +38,8 @@ def train():
         wandb.init(project=wandb_config.project, name=wandb_config.name)
     try:
         # 3단계: 학습 시작
-        #dpo_train(ds)
-        simpo_train(ds)
+        dpo_train(ds)
+        #simpo_train(ds)
     finally:
         if wandb_config is not None:
             wandb.finish()
