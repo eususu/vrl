@@ -1,3 +1,4 @@
 temp_dataset*
 __pycache__
 .ruff_cache
+user_config.py

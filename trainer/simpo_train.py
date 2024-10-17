@@ -7,9 +7,7 @@ from .config import get_config
 from datasets import Dataset
 from .loader.load import load
 
-from trl import DPOTrainer
-
-model_info, unsloth_config, wandb_config, datasets, training_args, lora_config = get_config()
+project_info, model_info, unsloth_config, wandb_config, datasets, training_args, lora_config = get_config()
 
 
 def simpo_train(ds:Dataset):

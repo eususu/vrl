@@ -3,8 +3,12 @@ from typing import List, Optional
 from pydantic import BaseModel
 from trl import DPOConfig
 from peft import LoraConfig
-
 from .extend.simpo.simpo_config import SimPOConfig
+
+
+class ProjectConfig(BaseModel):
+    project_name:str
+    noti_google_chat_url:str=None
 
 class ModelConfig(BaseModel):
     base_name:str
@@ -32,13 +36,28 @@ class UnslothConfig(BaseModel):
     loftq_config:dict={}
     temporary_location:str="_unsloth_temporary_saved_buffers"
 
-OFFLINE=True
-OFFLINE=False
+import importlib
+try:
+    user_config = importlib.import_module('trainer.user_config')
+except Exception as e:
+    print("## need user_config.py for you")
+    print("## copy example_get_config function from config.py to get_config function in user_config.py")
+    print("## and edit it")
+
 def get_config():
+    user_configs = user_config.get_config()
+    #validate return values
+
+    return user_configs
+def example_get_config():
+    project_info = ProjectConfig(
+        project_name="example project name",
+        noti_google_chat_url=None, # fill with your noti link
+    )
     # 학습 대상 모델 기본 설정
     model_info = ModelConfig(
         base_name= 'google/gemma-2-2b-it',
-        load_in_n_bit= 4,
+        load_in_n_bit= 8,
     )
 
     # unsloth 설정
@@ -63,24 +82,23 @@ def get_config():
         project="dpotest",
         name="vrl_user",
     )
-    if OFFLINE:
-        wandb_config = None
 
     datasets = [
-    #'kuotient/orca-math-korean-dpo-pairs',
+    'kuotient/orca-math-korean-dpo-pairs',
     'aiyets/argilla_dpo-mix-7k-ko',
     ]
 
     # TRL 설정
     training_args = DPOConfig(
         './dpo_result',
-        max_steps=50,
-        max_length = 128, #4096+512,
-        max_prompt_length = 64, #4096,
+        hub_model_id='aiyets/gemma-2-9b-it-dpo_dual_002_lora',
+        save_total_limit=4,
+        max_length = 4096+512,
+        max_prompt_length = 4096,
         beta=0.1,
         warmup_ratio=0.1,
-        num_train_epochs=1,
-        per_device_train_batch_size=1,
+        num_train_epochs=2,
+        per_device_train_batch_size=2,
         gradient_accumulation_steps=4,
         gradient_checkpointing=True,
         remove_unused_columns=False,
@@ -93,8 +111,7 @@ def get_config():
         dataset_num_proc=os.cpu_count() - 1, # dataset 크기가 커지면 꼭 필요함
         report_to="wandb",
         run_name="vrl_user",
-        push_to_hub=True if OFFLINE else False,
-        hub_model_id='aiyets/test',
+        push_to_hub=True,
         hub_strategy='checkpoint',
         hub_private_repo=True, # 저장소 private
         )
@@ -122,7 +139,7 @@ def get_config():
         dataset_num_proc=os.cpu_count() - 1, # dataset 크기가 커지면 꼭 필요함
         report_to="wandb",
         run_name="vrl_user",
-        push_to_hub=True if OFFLINE else False,
+        push_to_hub=True,
         hub_strategy='checkpoint',
         hub_private_repo=True, # 저장소 private
     )
@@ -138,6 +155,7 @@ def get_config():
 
     # dict로 반환하고 싶지만, 직렬화가 허용된 객체가 아니라 이게 최선임
     return (
+        project_info,
         model_info,
         unsloth_config,
         wandb_config,
@@ -145,3 +163,7 @@ def get_config():
         training_args,
         lora_config,
         )
+
+
+if __name__ == "__main__":
+    print(get_config())

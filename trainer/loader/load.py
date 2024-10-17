@@ -1,5 +1,5 @@
 from ..config import get_config
-model_info, unsloth_config, wandb_config, datasets, training_args, lora_config = get_config()
+project_info, model_info, unsloth_config, wandb_config, datasets, training_args, lora_config = get_config()
 
 from .normal_loader import normal_load
 from .lora_loader import lora_load

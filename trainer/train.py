@@ -1,8 +1,11 @@
 import logging
 import sys
+import requests
 from datasets import Dataset, concatenate_datasets
 import wandb
 
+from trl import DPOConfig
+from .extend.simpo.simpo_config import SimPOConfig
 
 from .dpo_train import dpo_train
 from .simpo_train import simpo_train
@@ -10,7 +13,7 @@ from .chat_template.detect import find_chat_template
 from .preprocess import preprocess
 from .config import get_config
 
-model_info, unsloth_config, wandb_config, datasets, training_args, lora_config = get_config()
+project_info, model_info, unsloth_config, wandb_config, datasets, training_args, lora_config = get_config()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -18,6 +21,19 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
     handlers=[logging.StreamHandler(sys.stdout)],
 )
+
+
+def noti():
+
+    url = project_info.noti_google_chat_url
+    if url is None:
+        print("noti was disabled")
+
+    message = {
+        'text': f'{project_info.project_name} 학습 종료'
+    }
+
+    res = requests.post(url, json=message)
 
 ###############################################################################################
 
@@ -38,10 +54,14 @@ def train():
         wandb.init(project=wandb_config.project, name=wandb_config.name)
     try:
         # 3단계: 학습 시작
-        dpo_train(ds)
-        #simpo_train(ds)
+        if isinstance(training_args, DPOConfig):
+            dpo_train(ds)
+        elif isinstance(training_args, SimPOConfig):
+            simpo_train(ds)
     finally:
         if wandb_config is not None:
             wandb.finish()
+
+        noti()
 if __name__ == "__main__":
     train()
