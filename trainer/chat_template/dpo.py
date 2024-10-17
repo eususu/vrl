@@ -45,7 +45,7 @@ class ChatTemplate_DPO(ChatTemplate):
         if datatype == DPOFormat:
             return self._to_dataset_DPOFormat(name=name, origin=origin)
         if datatype == DPOFormat_argilla:
-            return self._to_dataset_DPOFormat_agrilla(name=name, origin=origin)
+            return self._to_dataset_DPOFormat_argilla(name=name, origin=origin)
         raise Exception("unsupported dop dataformat")
 
     def _to_dataset_DPOFormat(self, name:str, origin:Dataset)->Dataset:
@@ -70,13 +70,13 @@ class ChatTemplate_DPO(ChatTemplate):
             new_chosen = apply_template(Conversation(messages=chosen), target_template=target_template).removeprefix(dummy)
             new_rejected = apply_template(Conversation(messages=rejected), target_template=target_template).removeprefix(dummy)
 
-            list.append({'prompt': f'<bos>{new_prompt}', 'chosen': f'{new_chosen}\n<eos>', 'rejected': f'{new_rejected}\n<eos>'})
+            list.append({'prompt': f'<bos>{new_prompt}', 'chosen': f'{new_chosen}<eos>', 'rejected': f'{new_rejected}<eos>'})
             
         new_dataset = Dataset.from_list(list)
         new_dataset.save_to_disk(ds_path)
         return new_dataset
 
-    def _to_dataset_DPOFormat_agrilla(self, name:str, origin:Dataset)->Dataset:
+    def _to_dataset_DPOFormat_argilla(self, name:str, origin:Dataset)->Dataset:
         list = []
         target_template = self.chat_template_name
 
@@ -98,7 +98,7 @@ class ChatTemplate_DPO(ChatTemplate):
             new_chosen = apply_template(Conversation(messages=chosen), target_template=target_template).removeprefix(dummy)
             new_rejected = apply_template(Conversation(messages=rejected), target_template=target_template).removeprefix(dummy)
 
-            list.append({'prompt': f'<bos>{new_prompt}', 'chosen': f'{new_chosen}\n<eos>', 'rejected': f'{new_rejected}\n<eos>'})
+            list.append({'prompt': f'<bos>{new_prompt}', 'chosen': f'{new_chosen}<eos>', 'rejected': f'{new_rejected}<eos>'})
             
         new_dataset = Dataset.from_list(list)
         new_dataset.save_to_disk(ds_path)
