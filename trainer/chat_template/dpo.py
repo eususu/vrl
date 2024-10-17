@@ -70,7 +70,7 @@ class ChatTemplate_DPO(ChatTemplate):
             new_chosen = apply_template(Conversation(messages=chosen), target_template=target_template).removeprefix(dummy)
             new_rejected = apply_template(Conversation(messages=rejected), target_template=target_template).removeprefix(dummy)
 
-            list.append({'prompt': new_prompt, 'chosen': new_chosen, 'rejected': new_rejected})
+            list.append({'prompt': f'<bos>{new_prompt}', 'chosen': f'{new_chosen}\n<eos>', 'rejected': f'{new_rejected}\n<eos>'})
             
         new_dataset = Dataset.from_list(list)
         new_dataset.save_to_disk(ds_path)
@@ -98,7 +98,7 @@ class ChatTemplate_DPO(ChatTemplate):
             new_chosen = apply_template(Conversation(messages=chosen), target_template=target_template).removeprefix(dummy)
             new_rejected = apply_template(Conversation(messages=rejected), target_template=target_template).removeprefix(dummy)
 
-            list.append({'prompt': new_prompt, 'chosen': new_chosen, 'rejected': new_rejected})
+            list.append({'prompt': f'<bos>{new_prompt}', 'chosen': f'{new_chosen}\n<eos>', 'rejected': f'{new_rejected}\n<eos>'})
             
         new_dataset = Dataset.from_list(list)
         new_dataset.save_to_disk(ds_path)
