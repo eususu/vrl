@@ -18,8 +18,15 @@ import asyncssh
 CIDFILE='RUNNING.CID'
 api_key = None
 home = os.path.expanduser("~")
-with open(f'{home}/.vast_api_key', 'r') as file:
-  api_key = file.read().replace('\n', '')
+
+try:
+  with open(f'{home}/.vast_api_key', 'r') as file:
+    api_key = file.read().replace('\n', '')
+except Exception as e:
+  print(e)
+  print('# init vast ai first')
+  print('  vastai set api-key [YOUR API_KEY]')
+  exit(1)
 
 def read_cid()->int:
   try:
