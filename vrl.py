@@ -64,9 +64,17 @@ class VRL():
     self.api.init_ssh(cid=cid, ssh_key=ssh_key, pkey=pkey)
 
     # wait for apply ssh key
-    logging.info("waiting apply SSH key pair")
-    import time
-    time.sleep(5)
+
+    while True:
+      try:
+        import time
+        logging.info("waiting apply SSH key pair")
+        time.sleep(2)
+        self.api.launch_jobs(jobs=['ls -al'])
+        break
+      except Exception as e:
+        continue
+    logging.info("confirm applied SSH key pair")
 
     self.api.launch_jobs(jobs=init_commands)
 
@@ -81,9 +89,13 @@ class VRL():
       print(ae)
       pass
 
-  def train(self):
+  def rent(self):
+    token = os.environ["HF_TOKEN"]
+    wandb_apikey = os.environ["WANDB_API_KEY"]
     self.__init_container()
     commands = [
+      f'echo export HF_TOKEN={token} >> ~/.profile',
+      f'echo export WANDB_API_KEY={wandb_apikey} >> ~/.profile',
       'pip install accelerate trl peft xformers wandb',
       'nvidia-smi',
       #f'WANDB_PROJECT={self.options.title} WANDB_API_KEY={os.environ["WANDB_API_KEY"]} HF_TOKEN={os.environ["HF_TOKEN"]} accelerate launch --num_processes 1 -m trainer.train'
@@ -124,15 +136,17 @@ if __name__ == "__main__":
   options = VRLOptions(
     title="gemma_dpo_002_dualdata",
     lm_parameter=9,
-    num_gpus=2,
     rl_optimization="DPO",
-    favor_gpu='A100',
+    favor_gpu='H100',
+    num_gpus=8,
     disk=300,
   )
   vrl = VRL(options)
 
   import sys
   if len(sys.argv) > 1:
+    if sys.argv[1] == 'rent':
+      vrl.rent()
     if sys.argv[1] == 'shell':
       cmd = sys.argv[2] if len(sys.argv)>2 else ""
       ssh_cmd = vrl.shell(cmd)
@@ -154,4 +168,4 @@ if __name__ == "__main__":
         raise Exception("need a huggingface modelpath for evaluation")
       vrl.logickor(sys.argv[1])
   else:
-    vrl.train()
+    raise Exception("unsupported command")

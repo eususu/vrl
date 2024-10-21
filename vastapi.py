@@ -311,28 +311,7 @@ class VastAPI():
       return
 
     url = self.api.ssh_url(id=self.running_cid)
-    environment = {
-      'HF_TOKEN': os.environ['HF_TOKEN']
-    }
 
     print ("exec is begin~~~~~~~~~~~~~~")
-    ssh_exec_command_by_api(url=url, cmdlist=jobs, environment=environment)
+    ssh_exec_command_by_api(url=url, cmdlist=jobs)
     print ("exec is done~~~~~~~~~~~~~~")
-
-"""
-if __name__ == "__main__":
-  options = VRLOptions(
-    title="susu_dpo_001",
-    lm_parameter=7,
-    rl_optimization="DPO",
-    num_gpus=1,
-    favor_gpu='A100',
-    disk=200,
-  )
-  api = VastAPI(options)
-
-  cid = read_cid()
-  ssh_key, pkey = read_ssh_key()
-  api.init_ssh(cid=cid, ssh_key=ssh_key, pkey=pkey)
-
-"""
