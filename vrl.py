@@ -42,7 +42,7 @@ class VRL():
       if self.api.running_cid is not None:
         raise AlreadyExistInstance()
 
-      self.api.search_offer()
+      self.api.search_offer(self.options.favor_gpu, self.options.num_gpus)
       self.api.create_instance()
     except AlreadyExistInstance as ae:
       pass
@@ -74,10 +74,11 @@ class VRL():
   def shell(self, cmd:str):
     return self.api.shell(cmd=cmd)
 
-  def search(self):
+  def search(self, gpu_name:str, num_of_gpu:int):
     try:
-      self.api.search_offer()
+      self.api.search_offer(gpu_name, num_of_gpu)
     except AlreadyExistInstance as ae:
+      print(ae)
       pass
 
   def train(self):
@@ -90,8 +91,6 @@ class VRL():
     self.api.launch_jobs(jobs=commands)
 
     #self.api.destroy_instance()
-  def search(self):
-    self.api.search_offer()
   def ssh(self):
     import subprocess
 
@@ -143,7 +142,9 @@ if __name__ == "__main__":
       local = sys.argv[3]
       vrl.scp(remote, local)
     if sys.argv[1] == 'search':
-      vrl.search()
+      if len(sys.argv) < 3:
+        raise "Arugment exception"
+      vrl.search(sys.argv[2], sys.argv[3])
     if sys.argv[1] == 'ssh':
       vrl.ssh()
     if sys.argv[1] == 'stop':

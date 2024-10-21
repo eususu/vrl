@@ -52,21 +52,20 @@ def read_ssh_key():
 
 def retrieve_gpu_model(gpu_name:str)->str:
   list = None
-  if gpu_name == 'A100':
+  if gpu_name.capitalize() == 'A100':
     list = [
       'A100_SXM4',
       'A100_SXM',
       'A100X',
       'A100_PCIE',
     ]
-  elif gpu_name == 'H100':
+  elif gpu_name.capitalize() == 'H100':
     list = [
       'H100_NVL',
       'H100_SXM',
-
     ]
   else:
-    list = [gpu_name]
+    list = [gpu_name.capitalize()]
 
   return f'[{",".join(list)}]'
 
@@ -159,22 +158,25 @@ class VastAPI():
     logging.info('remove orphant CID file')
     os.remove(CIDFILE)
 
-  def search_offer(self):
-    _gpu_name = retrieve_gpu_model(self.options.favor_gpu)
+  def search_offer(self, gpu_name:str, num_of_gpu:int):
+    _gpu_name = retrieve_gpu_model(gpu_name)
     order='-inet_down'
     order='+dph'
 
     offer_conditions = [
-      'reliability>0.99',
+      'reliability>0.96',
     ]
 
     # 요구하는 gpu ram에 따라 장치를 선택하게 해야함
     offer_conditions.append('inet_down > 800')
     offer_conditions.append('gpu_ram>=42')
-    offer_conditions.append(f'num_gpus={self.options.num_gpus}')
+    offer_conditions.append(f'num_gpus={num_of_gpu}')
     offer_conditions.append(f'gpu_name in {_gpu_name}')
     offers_str = self.api.search_offers(query=' '.join(offer_conditions), order=order)
     offers = parse_offers(offers_str)
+    print(offers)
+    if len(offers) == 0:
+      raise Exception(f"there are no available GPU({_gpu_name}x{num_of_gpu}).")
 
     for offer in offers:
       offer.print_summary()

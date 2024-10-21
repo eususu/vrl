@@ -1,8 +1,8 @@
 all:
-	python3 vrl.py
+	python3 -m vrl rent
 
 search:
-	python3 -m vrl search
+	python3 -m vrl search h100 8
 
 bash:
 	python3 -m vrl shell
