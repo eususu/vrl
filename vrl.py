@@ -85,7 +85,8 @@ class VRL():
     commands = [
       'pip install accelerate trl peft xformers wandb',
       'nvidia-smi',
-      f'WANDB_PROJECT={self.options.title} WANDB_API_KEY={os.environ["WANDB_API_KEY"]} HF_TOKEN={os.environ["HF_TOKEN"]} accelerate launch --num_processes 1 train/train.py ']
+      #f'WANDB_PROJECT={self.options.title} WANDB_API_KEY={os.environ["WANDB_API_KEY"]} HF_TOKEN={os.environ["HF_TOKEN"]} accelerate launch --num_processes 1 -m trainer.train'
+      ]
     self.api.launch_jobs(jobs=commands)
 
     #self.api.destroy_instance()
@@ -127,7 +128,7 @@ if __name__ == "__main__":
     num_gpus=2,
     rl_optimization="DPO",
     favor_gpu='A100',
-    disk=200,
+    disk=300,
   )
   vrl = VRL(options)
 

@@ -13,12 +13,17 @@ def lora_load():
     quantization_config = BitsAndBytesConfig(
         load_in_4bit=True if model_info.load_in_n_bit == 4 else False,
         load_in_8bit=True if model_info.load_in_n_bit == 8 else False,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.bfloat16,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_storage=torch.bfloat16,
     )
 
     model = AutoModelForCausalLM.from_pretrained(model_info.base_name,
       torch_dtype=torch.bfloat16,
       quantization_config=quantization_config,
       device_map="auto",
+      attn_implementation="flash_attention_2",
       )
     model.config.use_cache = False
     model.gradient_checkpointing_enable()
@@ -32,7 +37,5 @@ def lora_load():
         model_info.base_name,
         trust_remote_code=True,
         )
-    tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.padding_side = 'right'
 
     return model, tokenizer

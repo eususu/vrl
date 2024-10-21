@@ -59,6 +59,12 @@ def retrieve_gpu_model(gpu_name:str)->str:
       'A100X',
       'A100_PCIE',
     ]
+  elif gpu_name == 'H100':
+    list = [
+      'H100_NVL',
+      'H100_SXM',
+
+    ]
   else:
     list = [gpu_name]
 
@@ -289,7 +295,7 @@ class VastAPI():
     ssh.connect(host, port=port, username=user, pkey=pkey)
 
 
-    local_file_path = './train'
+    local_file_path = './trainer'
 
     remote_base_path = '/root'
     print ("begin copy file")

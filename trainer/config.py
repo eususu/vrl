@@ -8,7 +8,7 @@ from .extend.simpo.simpo_config import SimPOConfig
 
 class ProjectConfig(BaseModel):
     project_name:str
-    noti_google_chat_url:str=None
+    noti_google_chat_url:Optional[str]=None
 
 class ModelConfig(BaseModel):
     base_name:str
