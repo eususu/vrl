@@ -62,20 +62,6 @@ class VRL():
     logging.info('## instance is ready')
     ssh_key, pkey = read_ssh_key()
     self.api.init_ssh(cid=cid, ssh_key=ssh_key, pkey=pkey)
-
-    # wait for apply ssh key
-
-    while True:
-      try:
-        import time
-        logging.info("waiting apply SSH key pair")
-        time.sleep(2)
-        self.api.launch_jobs(jobs=['ls -al'])
-        break
-      except Exception as e:
-        continue
-    logging.info("confirm applied SSH key pair")
-
     self.api.launch_jobs(jobs=init_commands)
 
 
@@ -96,7 +82,7 @@ class VRL():
     commands = [
       f'echo export HF_TOKEN={token} >> ~/.profile',
       f'echo export WANDB_API_KEY={wandb_apikey} >> ~/.profile',
-      'pip install accelerate trl peft xformers wandb',
+      'pip install accelerate trl peft xformers wandb deepspeed flash-attn',
       'nvidia-smi',
       #f'WANDB_PROJECT={self.options.title} WANDB_API_KEY={os.environ["WANDB_API_KEY"]} HF_TOKEN={os.environ["HF_TOKEN"]} accelerate launch --num_processes 1 -m trainer.train'
       ]
@@ -109,6 +95,7 @@ class VRL():
 
     cmds =[
       'ssh',
+      '-oStrictHostKeyChecking=no',
       self.api.sshurl()
     ]
 

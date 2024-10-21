@@ -294,7 +294,14 @@ class VastAPI():
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-    ssh.connect(host, port=port, username=user, pkey=pkey)
+    while True:
+      try:
+        logging.info("waiting apply SSH key pair")
+        ssh.connect(host, port=port, username=user, pkey=pkey)
+        logging.info("confirm applied SSH key pair")
+        break
+      except Exception as e:
+        continue
 
 
     local_file_path = './trainer'
