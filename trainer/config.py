@@ -99,7 +99,7 @@ def example_get_config():
         warmup_ratio=0.1,
         num_train_epochs=2,
         per_device_train_batch_size=2,
-        gradient_accumulation_steps=4,
+        gradient_accumulation_steps=4, # deepspeed를 사용하면 여기서 옵션 빼던가, deepspeed거 쓰던거 해야함
         gradient_checkpointing=True,
         remove_unused_columns=False,
         bf16=True,
