@@ -8,10 +8,13 @@ from .extend.simpo.simpo_config import SimPOConfig
 
 class ProjectConfig(BaseModel):
     project_name:str
+    output_path:str
+    hub_model_id:Optional[str]
     noti_google_chat_url:Optional[str]=None
 
 class ModelConfig(BaseModel):
     base_name:str
+    attn_implementation:Optional[str]
     load_in_n_bit:int
 
 class WandBConfig(BaseModel):
@@ -52,11 +55,13 @@ def get_config():
 def example_get_config():
     project_info = ProjectConfig(
         project_name="example project name",
+        output_path='train_output',
         noti_google_chat_url=None, # fill with your noti link
     )
     # 학습 대상 모델 기본 설정
     model_info = ModelConfig(
         base_name= 'google/gemma-2-2b-it',
+        attn_implementation="eager", # gemma must be eager
         load_in_n_bit= 8,
     )
 
@@ -90,11 +95,11 @@ def example_get_config():
 
     # TRL 설정
     training_args = DPOConfig(
-        './dpo_result',
-        hub_model_id='aiyets/gemma-2-9b-it-dpo_dual_002_lora',
-        save_total_limit=4,
-        max_length = 4096+512,
-        max_prompt_length = 4096,
+        project_info.output_path,
+        hub_model_id=None if project_info.hub_model_id is None else project_info.hub_model_id,
+        save_total_limit=2,
+        max_length = 2048,
+        max_prompt_length = 2048,
         beta=0.1,
         warmup_ratio=0.1,
         num_train_epochs=2,
@@ -116,11 +121,11 @@ def example_get_config():
         hub_private_repo=True, # 저장소 private
         )
     atraining_args = SimPOConfig(
-        './simpo_result',
-        hub_model_id='aiyets/test',
-        max_steps=50,
-        max_length = 128, #4096+512,
-        max_prompt_length = 64, #4096,
+        project_info.output_path,
+        hub_model_id=None if project_info.hub_model_id is None else project_info.hub_model_id,
+        save_total_limit=2,
+        max_length = 2048,
+        max_prompt_length = 2048,
         warmup_ratio=0.1,
         num_train_epochs=1,
         per_device_train_batch_size=1,
