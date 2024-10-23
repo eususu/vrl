@@ -1,13 +1,13 @@
 import logging
 from pydantic import BaseModel
 
-class VRLOptions(BaseModel):
+class RentOptions(BaseModel):
   title:str # project title,
-  lm_parameter:int # 7B, 11B, ...
   favor_gpu:str
   num_gpus:int=1
-  rl_optimization:str # DPO, OROP, ...
   disk:int
+  min_down:int
+  init_timeout:int
 
 
 class Colors:
@@ -15,6 +15,9 @@ class Colors:
   CYAN='\033[92m'
   YELLOW='\033[93m'
   GREY='\033[90m'
+
+  def to_str(cls, msg:str):
+    return f'{cls}{msg}{Colors.DEFAULT}'
 
 class Offer(BaseModel):
   ID:str

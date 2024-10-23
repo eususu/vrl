@@ -1,19 +1,13 @@
-import json
 import logging
 import os
 import re
 import ast
-import socket
-import subprocess
-from typing import List, Tuple
+from typing import List
 import paramiko
 from vastai import VastAI
 
-from _exceptions import AlreadyExistInstance
 from _ssh import ssh_exec_command_by_api
-from _types import Colors, Instance, Offer, VRLOptions
-
-import asyncssh
+from _types import Colors, Instance, Offer
 
 CIDFILE='RUNNING.CID'
 api_key = None
@@ -103,25 +97,20 @@ def parse_offers(offers:str)->List[Offer]:
 
 class VastAPI():
   api:VastAI
-  options:VRLOptions
   ssh_key:str
   ssh_pkey:str
   running_cid:str
 
-  def __init__(self, options:VRLOptions, api_key:str=api_key):
-    self.options = options
+  def __init__(self, api_key:str=api_key):
     self.api = VastAI(api_key=api_key)
     self.ssh_key, self.ssh_pkey = read_ssh_key()
 
-
     try:
-      self.__check_duplicated_label()
+      self.__check_running_pid()
     except Exception as e:
       pass
 
-  @property
-  def label(self):
-    return f'VRL#{self.options.title}'
+
 
   def __parse_instances(self, lines:str)->List[Instance]:
     instances = []
@@ -147,7 +136,7 @@ class VastAPI():
     lines = self.api.show_instances()
     return self.__parse_instances(lines)
 
-  def __check_duplicated_label(self):
+  def __check_running_pid(self):
     try:
       with open(CIDFILE, 'r') as file:
         self.running_cid = int(file.read().strip())
@@ -156,16 +145,7 @@ class VastAPI():
       self.running_cid = None
       return
 
-    instances = self.get_instances()
-    for instance in instances:
-      if instance.Label == self.label or instance.ID == self.running_cid:
-        logging.info(instance)
-        raise AlreadyExistInstance(f"CID:{self.running_cid}, Label:{self.label} is already exists")
-
-    logging.info('remove orphant CID file')
-    os.remove(CIDFILE)
-
-  def search_offer(self, gpu_name:str, num_of_gpu:int):
+  def search_offer(self, gpu_name:str, num_of_gpu:int, min_down:int):
     _gpu_name, min_gpu_ram = retrieve_gpu_model(gpu_name)
     order='-inet_down'
     order='+dph'
@@ -175,7 +155,7 @@ class VastAPI():
     ]
 
     # 요구하는 gpu ram에 따라 장치를 선택하게 해야함
-    offer_conditions.append('inet_down > 800')
+    offer_conditions.append(f'inet_down > {min_down}')
     if min_gpu_ram:
       offer_conditions.append(f'gpu_ram>={min_gpu_ram}')
     offer_conditions.append(f'num_gpus={num_of_gpu}')
@@ -197,11 +177,11 @@ class VastAPI():
     self.selected_offer.print_summary()
 
 
-  def create_instance(self)->str:
+  def create_instance(self, title:str, disk:int)->str:
     result = self.api.create_instance(
       ID=self.selected_offer.ID,
-      label=self.label,
-      disk=self.options.disk,
+      label=title,
+      disk=disk,
       image="vllm/vllm-openai:latest",
       )
 
@@ -249,9 +229,10 @@ class VastAPI():
     host = host_and_port[0]
     port = int(host_and_port[1])
 
-    print(f'user is {user}')
-    print(f'host is {host}')
-    print(f'port is {port}')
+    #print(f'user is {user}')
+    #print(f'host is {host}')
+    #print(f'port is {port}')
+
     import paramiko
     from scp import SCPClient
 

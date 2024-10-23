@@ -1,5 +1,5 @@
 all:
-	python3 -m vrl rent
+	python3 -m vrl rent -gpu 4090
 
 search:
 	python3 -m vrl search h100 8
