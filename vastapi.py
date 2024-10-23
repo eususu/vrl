@@ -52,6 +52,7 @@ def read_ssh_key():
 
 def retrieve_gpu_model(gpu_name:str)->str:
   list = None
+  min_ram = None
   if gpu_name.capitalize() == 'A100':
     list = [
       'A100_SXM4',
@@ -59,15 +60,21 @@ def retrieve_gpu_model(gpu_name:str)->str:
       'A100X',
       'A100_PCIE',
     ]
+    min_ram = 80
   elif gpu_name.capitalize() == 'H100':
     list = [
       'H100_NVL',
       'H100_SXM',
     ]
+    min_ram = None
+  elif '4090' in gpu_name:
+    list = [
+      'RTX_4090',
+    ]
   else:
     list = [gpu_name.capitalize()]
 
-  return f'[{",".join(list)}]'
+  return f'[{",".join(list)}]', min_ram
 
 def parse_offers(offers:str)->List[Offer]:
   result = []
@@ -159,7 +166,7 @@ class VastAPI():
     os.remove(CIDFILE)
 
   def search_offer(self, gpu_name:str, num_of_gpu:int):
-    _gpu_name = retrieve_gpu_model(gpu_name)
+    _gpu_name, min_gpu_ram = retrieve_gpu_model(gpu_name)
     order='-inet_down'
     order='+dph'
 
@@ -169,9 +176,11 @@ class VastAPI():
 
     # 요구하는 gpu ram에 따라 장치를 선택하게 해야함
     offer_conditions.append('inet_down > 800')
-    offer_conditions.append('gpu_ram>=42')
+    if min_gpu_ram:
+      offer_conditions.append(f'gpu_ram>={min_gpu_ram}')
     offer_conditions.append(f'num_gpus={num_of_gpu}')
     offer_conditions.append(f'gpu_name in {_gpu_name}')
+    logging.debug(offer_conditions)
     offers_str = self.api.search_offers(query=' '.join(offer_conditions), order=order)
     offers = parse_offers(offers_str)
     print(offers)
