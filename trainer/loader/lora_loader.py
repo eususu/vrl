@@ -23,7 +23,7 @@ def lora_load():
       torch_dtype=torch.bfloat16,
       quantization_config=quantization_config,
       device_map="auto",
-      attn_implementation="flash_attention_2",
+      attn_implementation=model_info.attn_implementation,
       )
     model.config.use_cache = False
     model.gradient_checkpointing_enable()

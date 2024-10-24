@@ -1,14 +1,16 @@
 import logging
+import os
 import sys
 import requests
 from datasets import Dataset, concatenate_datasets
 import wandb
 
-from trl import DPOConfig
+from trl import DPOConfig, ORPOConfig
 from .extend.simpo.simpo_config import SimPOConfig
 
 from .dpo_train import dpo_train
 from .simpo_train import simpo_train
+from .orpo_train import orpo_train
 from .chat_template.detect import find_chat_template
 from .preprocess import preprocess
 from .config import get_config
@@ -28,6 +30,7 @@ def noti():
     url = project_info.noti_google_chat_url
     if url is None:
         print("noti was disabled")
+        return
 
     message = {
         'text': f'{project_info.project_name} 학습 종료'
@@ -50,7 +53,9 @@ def train():
     ds = concatenate_datasets(ds_list)
     print(ds)
 
-    if wandb_config is not None:
+    if wandb_config is None:
+        os.environ["WANDB_MODE"] = "offline"
+    else:
         wandb.init(project=wandb_config.project, name=wandb_config.name)
     try:
         # 3단계: 학습 시작
@@ -58,6 +63,8 @@ def train():
             dpo_train(ds)
         elif isinstance(training_args, SimPOConfig):
             simpo_train(ds)
+        elif isinstance(training_args, ORPOConfig):
+            orpo_train(ds)
     finally:
         if wandb_config is not None:
             wandb.finish()
