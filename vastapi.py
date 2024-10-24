@@ -4,12 +4,14 @@ import re
 import ast
 from typing import List
 import paramiko
+from pydantic import BaseModel
 from vastai import VastAI
 
 from _ssh import read_ssh_key, ssh_exec_command_by_api
-from _types import Colors, Instance, Offer
+from _types import Colors, Instance, Offer, RentState
 
-CIDFILE='RUNNING.CID'
+
+
 api_key = None
 home = os.path.expanduser("~")
 
@@ -21,14 +23,6 @@ except Exception as e:
   print('# init vast ai first')
   print('  vastai set api-key [YOUR API_KEY]')
   exit(1)
-
-def read_cid()->int:
-  try:
-    with open(CIDFILE, 'r') as file:
-      running_cid = file.read().strip()
-      return int(running_cid)
-  except Exception as e:
-    raise Exception("no cid file")
 
 def retrieve_gpu_model(gpu_name:str)->str:
   list = None
@@ -127,13 +121,8 @@ class VastAPI():
     return self.__parse_instances(lines)
 
   def __check_running_pid(self):
-    try:
-      with open(CIDFILE, 'r') as file:
-        self.running_cid = int(file.read().strip())
-    except FileNotFoundError:
-      logging.debug(f'{CIDFILE} 파일이 없습니다.')
-      self.running_cid = None
-      return
+    rentState = RentState.load()
+    self.rentState = rentState
 
   def search_offer(self, gpu_name:str, num_of_gpu:int, min_down:int=None):
     _gpu_name, min_gpu_ram = retrieve_gpu_model(gpu_name)
@@ -168,13 +157,14 @@ class VastAPI():
     self.selected_offer.print_summary()
 
 
-  def create_instance(self, title:str, disk:int)->str:
+  def create_instance(self, title:str, disk:int)->RentState:
     result = self.api.create_instance(
       ID=self.selected_offer.ID,
       label=title,
       disk=disk,
       image="vllm/vllm-openai:latest",
       )
+
 
     logging.debug(f'create instance result={result}')
 
@@ -188,27 +178,35 @@ class VastAPI():
     with open('RUNNING.CID', 'w') as f:
       f.write(str(res['new_contract']))
 
-    self.running_cid = res['new_contract']
-    return self.running_cid
+    running_cid = res['new_contract']
+    rentState = RentState(running_cid=running_cid)
+    rentState.save()
+    return rentState
+
+  def _checkInstance(self):
+    if self.rentState is None:
+      raise Exception("아직 장치를 임대하지 않았습니다")
 
   def destroy_instance(self):
-    res = self.api.destroy_instance(id=self.running_cid)
+    self._checkInstance()
+    res = self.api.destroy_instance(id=self.rentState.running_cid)
     logging.info(f'destory instance -> {res}')
-    logging.info('remove CID file')
-    os.remove(CIDFILE)
+    RentState.remove()
 
-    sshjson = f'ssh_{self.running_cid}.json' # vastai generate it.
+    sshjson = f'ssh_{self.rentState.running_cid}.json' # vastai generate it.
 
     os.remove(sshjson)
 
   def sshurl(self):
-    cid = self.running_cid
+    cid = self.rentState.running_cid
     url = self.api.ssh_url(id=cid).strip()
     print(f'ssh url={url}')
     return url
 
   def scp(self, remote, local):
-    cid = self.running_cid
+    self._checkInstance()
+
+    cid = self.rentState.running_cid
     url = self.api.ssh_url(id=cid)
     print(f'ssh {url}')
 
@@ -239,10 +237,9 @@ class VastAPI():
     print ("copy file is done")
 
   def shell(self, cmd:str):
-    cid = self.running_cid
-    logging.info(f'ssh pub_key: {self.ssh_key}')
-    res = self.api.attach_ssh(instance_id=cid, ssh_key=self.ssh_key)
-    print(res)
+    self._checkInstance()
+
+    cid = self.rentState.running_cid
     url = self.api.ssh_url(id=cid)
     print(url)
 
@@ -297,8 +294,9 @@ class VastAPI():
   def launch_jobs(self, jobs:List[str]):
     if not jobs:
       return
+    self._checkInstance()
 
-    url = self.api.ssh_url(id=self.running_cid)
+    url = self.api.ssh_url(id=self.rentState.running_cid)
 
     print ("exec is begin~~~~~~~~~~~~~~")
     ssh_exec_command_by_api(url=url, cmdlist=jobs)

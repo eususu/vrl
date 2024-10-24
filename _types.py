@@ -1,4 +1,5 @@
 import logging
+import os
 from pydantic import BaseModel
 
 class RentOptions(BaseModel):
@@ -92,3 +93,29 @@ class Instance(BaseModel):
           Label=fields[16],
           age=fields[17]
       )
+
+import json
+_CIDFILE='RUNNING.CID'
+class RentState(BaseModel):
+  running_cid:int
+
+  @classmethod
+  def load(cls):
+    try:
+      with open(_CIDFILE, 'r') as file:
+        data = json.load(file)
+        return cls.model_validate(data)
+    except FileNotFoundError:
+      logging.debug(f'{_CIDFILE} 파일이 없습니다.')
+      return None
+  def save(self):
+    try:
+      with open(_CIDFILE, 'w') as file:
+        file.write(self.model_dump_json())
+    except Exception as e:
+      print(e)
+
+  @classmethod
+  def remove(cls):
+    logging.info('remove CID file')
+    os.remove(_CIDFILE)

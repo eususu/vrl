@@ -7,7 +7,7 @@ from typing import List
 from pydantic import BaseModel
 
 from _exceptions import AlreadyExistInstance
-from _types import Colors, Instance, Offer, RentOptions
+from _types import Colors, Instance, Offer, RentOptions, RentState
 from vastapi import VastAPI, read_ssh_key
 
 logging.basicConfig(level=logging.INFO)
@@ -21,21 +21,23 @@ logging.getLogger('paramiko').setLevel(logging.WARNING)
 class VRL():
   api:VastAPI
   selected_offer:Offer
+  rentState:RentState
 
   def __init__(self):
+    self.rentState = RentState.load()
     self.api = VastAPI()
 
   def __init_container(self, options:RentOptions, init_commands:List[str]=None):
     try:
-      if self.api.running_cid is not None:
+      if self.rentState is not None:
         raise AlreadyExistInstance()
 
       self.api.search_offer(options.favor_gpu, options.num_gpus, min_down=options.min_down)
-      self.api.create_instance(title=options.title, disk=options.disk)
+      self.rentState = self.api.create_instance(title=options.title, disk=options.disk)
     except AlreadyExistInstance as ae:
       pass
 
-    cid = self.api.running_cid
+    cid = self.rentState.running_cid
 
     from tqdm import tqdm
     import time
@@ -134,6 +136,8 @@ def rent(args:argparse.Namespace):
   hostname=socket.gethostname()
   username = os.getenv('USER') or os.getenv('USERNAME')
 
+  vrl = VRL()
+
   options = RentOptions(
     title=f"{hostname}_{username}",
     favor_gpu=args.gpu,
@@ -154,7 +158,9 @@ def search(args:argparse.Namespace):
   vrl = VRL()
   vrl.search(args.gpu, args.num_gpu, min_down=args.min_down)
 
-vrl:VRL = VRL()
+def ssh(args:argparse.Namespace):
+  vrl = VRL()
+  vrl.ssh()
 
 parser = argparse.ArgumentParser()
 subparsers = parser.add_subparsers(title='commands', dest='command')
@@ -166,6 +172,9 @@ rent_parser.add_argument('-disk', type=int, default=50, help='임대를 원하�
 rent_parser.add_argument('-min_down', type=int, default=800, help='네트워크 다운로드 속도의 최하치를 Mbps 단위로 입력합니다(기본:800)')
 rent_parser.add_argument('-init_timeout', type=int, default=120, help='지정된 시간동안 인스턴스를 생성하지 못하면 중단합니다(기본:120 초)')
 #rent_parser.add_argument('-min_up', type=int, help='네트워크 업로드 속도의 최하치를 Mbps 입력합니다')
+
+ssh_parser = subparsers.add_parser('ssh', help='ssh에 접속합니다')
+ssh_parser.set_defaults(func=ssh)
 
 stop_parser = subparsers.add_parser('stop', help='임대된 장비를 반납합니다')
 stop_parser.set_defaults(func=stop)
