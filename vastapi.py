@@ -6,7 +6,7 @@ from typing import List
 import paramiko
 from vastai import VastAI
 
-from _ssh import ssh_exec_command_by_api
+from _ssh import read_ssh_key, ssh_exec_command_by_api
 from _types import Colors, Instance, Offer
 
 CIDFILE='RUNNING.CID'
@@ -29,20 +29,6 @@ def read_cid()->int:
       return int(running_cid)
   except Exception as e:
     raise Exception("no cid file")
-def read_ssh_key():
-  ssh_key=None
-  pkey=None
-  try:
-    with open(f'{home}/.ssh/id_ed25519.pub', 'r') as file:
-      ssh_key = file.read().strip()
-
-    pkey_path = f'{home}/.ssh/id_ed25519'
-    pkey = paramiko.Ed25519Key.from_private_key_file(pkey_path)
-
-  except Exception as e:
-    raise Exception("no ssh pub or pkey", e)
-
-  return ssh_key, pkey
 
 def retrieve_gpu_model(gpu_name:str)->str:
   list = None

@@ -1,3 +1,4 @@
+import os
 import logging
 import subprocess
 import asyncio, asyncssh, sys
@@ -5,10 +6,11 @@ from typing import List, Tuple
 
 from _types import Colors
 
-from paramiko import SSHClient
+import paramiko
 
 logging.basicConfig(level=logging.INFO)
 
+home = os.path.expanduser("~")
 
 def _extract_ssh_url(url:str)->Tuple[str, str, int]:
   scheme_and_etc = url.split('://')
@@ -96,5 +98,37 @@ def ssh_exec_command(url:str, cmd:str):
   if rc != 0:
     print(process.stderr.read().decode())
 
-if __name__ == "__main__":
-  ssh_exec_command_by_api(url='ssh://172.16.10.14', cmdlist=['uptime','ls -al'])
+def read_ssh_key():
+  ssh_key=None
+  pkey=None
+  pub:str=None
+  pri:str=None
+  key_names =[
+    'id_ed25519',
+    'id_rsa'
+  ]
+  selected_key_name:str=None
+  for key_name in key_names:
+    pri = f'{home}/.ssh/{key_name}'
+    pub = f'{home}/.ssh/{key_name}.pub'
+
+    if os.path.exists(pri) and os.path.exists(pub):
+      selected_key_name = key_name
+      break
+
+  if not pri or not pub:
+    raise Exception(f"need .ssh keypair in ({home}/.ssh)")
+  try:
+    with open(pub, 'r') as file:
+      ssh_key = file.read().strip()
+
+    if selected_key_name == 'id_ed25519':
+      pkey = paramiko.Ed25519Key.from_private_key_file(pri)
+    elif selected_key_name == 'id_rsa':
+      pkey = paramiko.RSAKey.from_private_key_file(pri)
+    else:
+      raise Exception (f'unknown ssh key type:{selected_key_name}')
+  except Exception as e:
+    raise Exception("failed to access pub or pkey", e)
+
+  return ssh_key, pkey
