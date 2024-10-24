@@ -30,14 +30,19 @@ class VRL():
   def __init_container(self, options:RentOptions, init_commands:List[str]=None):
     try:
       if self.rentState is not None:
-        raise AlreadyExistInstance()
+        instance = self.api.get_instance(self.rentState.running_cid)
+        if instance is not None:
+          raise AlreadyExistInstance()
+
 
       self.api.search_offer(options.favor_gpu, options.num_gpus, min_down=options.min_down)
+      print("search offer")
       self.rentState = self.api.create_instance(title=options.title, disk=options.disk)
     except AlreadyExistInstance as ae:
       pass
 
     cid = self.rentState.running_cid
+    logging.info(f'Running CID({cid})')
 
     from tqdm import tqdm
     import time
@@ -80,6 +85,7 @@ class VRL():
     token = os.environ["HF_TOKEN"]
     wandb_apikey = os.environ["WANDB_API_KEY"]
     self.__init_container(options)
+
     commands = [
       f'echo export HF_TOKEN={token} >> ~/.profile',
       f'echo export WANDB_API_KEY={wandb_apikey} >> ~/.profile',

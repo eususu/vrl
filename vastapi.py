@@ -83,7 +83,8 @@ class VastAPI():
   api:VastAI
   ssh_key:str
   ssh_pkey:str
-  running_cid:str
+
+  rentState:RentState
 
   def __init__(self, api_key:str=api_key):
     self.api = VastAI(api_key=api_key)
@@ -93,7 +94,6 @@ class VastAPI():
       self.__check_running_pid()
     except Exception as e:
       pass
-
 
 
   def __parse_instances(self, lines:str)->List[Instance]:
@@ -113,7 +113,11 @@ class VastAPI():
     return instances
 
   def get_instance(self, cid:str)->Instance:
-    lines = self.api.show_instance(id=cid)
+    try:
+      lines = self.api.show_instance(id=cid)
+    except:
+      return None
+    print(lines)
     return self.__parse_instances(lines)[0]
 
   def get_instances(self)->List[Instance]:
