@@ -1,7 +1,7 @@
 import os
 from typing import List, Optional
 from pydantic import BaseModel
-from trl import DPOConfig
+from trl import DPOConfig, ORPOConfig
 from peft import LoraConfig
 from .extend.simpo.simpo_config import SimPOConfig
 
@@ -9,12 +9,12 @@ from .extend.simpo.simpo_config import SimPOConfig
 class ProjectConfig(BaseModel):
     project_name:str
     output_path:str
-    hub_model_id:Optional[str]
+    hub_model_id:Optional[str]=None
     noti_google_chat_url:Optional[str]=None
 
 class ModelConfig(BaseModel):
     base_name:str
-    attn_implementation:Optional[str]
+    attn_implementation:Optional[str]=None
     load_in_n_bit:int
 
 class WandBConfig(BaseModel):
@@ -39,25 +39,7 @@ class UnslothConfig(BaseModel):
     loftq_config:dict={}
     temporary_location:str="_unsloth_temporary_saved_buffers"
 
-import socket
-hostname = socket.gethostname()
-username = os.getenv('USER') or os.getenv('USERNAME')
-run_name = f'{hostname}_{username}'
-
-import importlib
-try:
-    user_config = importlib.import_module('trainer.user_config')
-except Exception as e:
-    print("## need user_config.py for you")
-    print("## copy user_config.py from user_config.py_template")
-    print("## and edit it")
-
-def get_config():
-    user_configs = user_config.get_config(run_name=run_name)
-    #validate return values
-
-    return user_configs
-def example_get_config():
+def get_config(run_name:str):
     project_info = ProjectConfig(
         project_name="example project name",
         output_path='train_output',
@@ -85,13 +67,14 @@ def example_get_config():
         random_state        = 3407,
         max_seq_length      = 512,
     )
-    # unsloth_config = None
+    unsloth_config = None
 
     # WANDB 설정
     wandb_config = WandBConfig(
         project="dpotest",
-        name="vrl_user",
+        name=run_name,
     )
+    wandb_config=None
 
     datasets = [
     'kuotient/orca-math-korean-dpo-pairs',
@@ -99,7 +82,7 @@ def example_get_config():
     ]
 
     # TRL 설정
-    training_args = DPOConfig(
+    dpo_args = DPOConfig(
         project_info.output_path,
         hub_model_id=None if project_info.hub_model_id is None else project_info.hub_model_id,
         save_total_limit=2,
@@ -120,12 +103,13 @@ def example_get_config():
         lr_scheduler_type='cosine',
         dataset_num_proc=os.cpu_count() - 1, # dataset 크기가 커지면 꼭 필요함
         report_to="wandb",
-        run_name="vrl_user",
+        run_name=run_name,
         push_to_hub=True,
         hub_strategy='checkpoint',
         hub_private_repo=True, # 저장소 private
         )
-    atraining_args = SimPOConfig(
+
+    simpo_args = SimPOConfig(
         project_info.output_path,
         hub_model_id=None if project_info.hub_model_id is None else project_info.hub_model_id,
         save_total_limit=2,
@@ -148,11 +132,42 @@ def example_get_config():
         logging_steps=1,
         dataset_num_proc=os.cpu_count() - 1, # dataset 크기가 커지면 꼭 필요함
         report_to="wandb",
-        run_name="vrl_user",
+        run_name=run_name,
         push_to_hub=True,
         hub_strategy='checkpoint',
         hub_private_repo=True, # 저장소 private
     )
+
+    orpo_args = ORPOConfig(
+        project_info.output_path,
+        hub_model_id=None if project_info.hub_model_id is None else project_info.hub_model_id,
+        save_total_limit=2,
+        max_length = 2048,
+        max_prompt_length = 2048,
+        warmup_ratio=0.1,
+        num_train_epochs=1,
+        per_device_train_batch_size=1,
+        gradient_accumulation_steps=4,
+        seed=42,
+        optim="adamw_bnb_8bit",
+        learning_rate=5e-6,
+        beta=0.1,
+        warmup_steps=100,
+        lr_scheduler_type='cosine',
+        ### 잘 안바꾸는건 뒤에 몰아주기
+        gradient_checkpointing=True,
+        remove_unused_columns=False,
+        bf16=True,
+        logging_steps=1,
+        dataset_num_proc=os.cpu_count() - 1, # dataset 크기가 커지면 꼭 필요함
+        report_to="wandb",
+        run_name=run_name,
+        push_to_hub=True,
+        hub_strategy='checkpoint',
+        hub_private_repo=True, # 저장소 private
+    )
+
+    training_args = orpo_args
 
     lora_config = LoraConfig(
         r=8,
