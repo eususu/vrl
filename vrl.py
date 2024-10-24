@@ -68,12 +68,11 @@ class VRL():
   def shell(self, cmd:str):
     return self.api.shell(cmd=cmd)
 
-  def search(self, gpu_name:str, num_of_gpu:int):
+  def search(self, gpu_name:str, num_of_gpu:int, min_down:int):
     try:
-      self.api.search_offer(gpu_name, num_of_gpu)
+      self.api.search_offer(gpu_name, num_of_gpu, min_down=min_down)
     except AlreadyExistInstance as ae:
       print(ae)
-      pass
 
   def rent(self, options:RentOptions):
     token = os.environ["HF_TOKEN"]
@@ -83,12 +82,9 @@ class VRL():
       f'echo export HF_TOKEN={token} >> ~/.profile',
       f'echo export WANDB_API_KEY={wandb_apikey} >> ~/.profile',
       'pip install accelerate trl peft xformers wandb deepspeed flash-attn',
-      'nvidia-smi',
-      #f'WANDB_PROJECT={self.options.title} WANDB_API_KEY={os.environ["WANDB_API_KEY"]} HF_TOKEN={os.environ["HF_TOKEN"]} accelerate launch --num_processes 1 -m trainer.train'
       ]
     self.api.launch_jobs(jobs=commands)
 
-    #self.api.destroy_instance()
   def ssh(self):
     import subprocess
 
@@ -97,20 +93,35 @@ class VRL():
       '-oStrictHostKeyChecking=no',
       self.api.sshurl()
     ]
-
     print(cmds)
-
     subprocess.call(cmds)
+
   def scp(self, remote:str, local:str):
     self.api.scp(remote, local)
-  def logickor(self, model_name:str):
+
+  def logickor(self, model_name:str, lora_adapter:str=None, lora_revision:str=None):
     init_commands = [
       'git clone https://github.com/eususu/LogicKor.git'
     ]
     self.__init_container(init_commands=init_commands)
 
+
+    extra_options = []
+    if lora_adapter is not None:
+      extra_options.append('-lm')
+      extra_options.append(lora_adapter)
+
+      if lora_revision is not None:
+        extra_options.append('-lmr')
+        extra_options.append(lora_revision)
+
+    if len(extra_options) == 0:
+      more_arg = ''
+    else:
+      more_arg = " ".join(extra_options)
+
     commands = [
-      'cd LogicKor && python3 cli.py --model aiyets/gemma-2-9b-it-dpo-1009_full -f',
+      f'cd LogicKor && python3 cli.py -m {model_name} {more_arg} -f',
       #'SCP LogicKor/evaluated/*.jsonl .',
     ]
     self.api.launch_jobs(jobs=commands)
@@ -139,6 +150,10 @@ def stop(args:argparse.Namespace):
   vrl = VRL()
   vrl.stop()
 
+def search(args:argparse.Namespace):
+  vrl = VRL()
+  vrl.search(args.gpu, args.num_gpu, min_down=args.min_down)
+
 vrl:VRL = VRL()
 
 parser = argparse.ArgumentParser()
@@ -154,6 +169,12 @@ rent_parser.add_argument('-init_timeout', type=int, default=120, help='지정된
 
 stop_parser = subparsers.add_parser('stop', help='임대된 장비를 반납합니다')
 stop_parser.set_defaults(func=stop)
+
+search_parser = subparsers.add_parser('search', help='설정된 조건에 맞는 장비를 조회합니다.')
+search_parser.add_argument('-gpu', type=str, help='임대를 원하는 GPU의 이름을 입력합니다.(h100, a100, 4090)', required=True)
+search_parser.add_argument('-num_gpu', type=int, default=1, help='임대를 원하는 GPU의 개수를 입력합니다.')
+search_parser.add_argument('-min_down', type=int, default=800, help='네트워크 다운로드 속도의 최하치를 Mbps 단위로 입력합니다(기본:800)')
+search_parser.set_defaults(func=search)
 
 args = parser.parse_args()
 if args.command is None:
@@ -177,12 +198,6 @@ if __name__ == "__main__":
   vrl = VRL(options)
 
   if len(sys.argv) > 1:
-    if sys.argv[1] == 'rent':
-      vrl.rent()
-    if sys.argv[1] == 'shell':
-      cmd = sys.argv[2] if len(sys.argv)>2 else ""
-      ssh_cmd = vrl.shell(cmd)
-      print(ssh_cmd)
     if sys.argv[1] == 'scp':
       remote = sys.argv[2]
       local = sys.argv[3]
@@ -193,8 +208,6 @@ if __name__ == "__main__":
       vrl.search(sys.argv[2], sys.argv[3])
     if sys.argv[1] == 'ssh':
       vrl.ssh()
-    if sys.argv[1] == 'stop':
-      vrl.stop()
     if sys.argv[1] == 'logickor':
       if len(sys.argv)<2:
         raise Exception("need a huggingface modelpath for evaluation")

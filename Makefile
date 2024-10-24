@@ -2,7 +2,7 @@ all:
 	python3 -m vrl rent -gpu 4090
 
 search:
-	python3 -m vrl search h100 8
+	python3 -m vrl search -gpu 6000 -num_gpu 8
 
 bash:
 	python3 -m vrl shell
