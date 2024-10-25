@@ -1,4 +1,9 @@
-all:
+all: status
+
+status:
+	python3 -m vrl status
+
+rent:
 	python3 -m vrl rent -gpu 4090
 
 search:

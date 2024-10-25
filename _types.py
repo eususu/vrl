@@ -12,13 +12,26 @@ class RentOptions(BaseModel):
 
 
 class Colors:
-  DEFAULT='\033[0m'
-  CYAN='\033[92m'
-  YELLOW='\033[93m'
-  GREY='\033[90m'
+    default = '\033[0m'
+    cyan = '\033[92m'
+    yellow = '\033[93m'
+    grey = '\033[90m'
+    red = '\033[91m'
 
-  def to_str(cls, msg:str):
-    return f'{cls}{msg}{Colors.DEFAULT}'
+    value: str
+
+    def __init__(self, value: str):
+        self.value = value
+
+    def to_str(self, msg: str):
+        return f'{self.value}{msg}{self.default}'
+
+
+Colors.DEFAULT = Colors(Colors.default)
+Colors.CYAN = Colors(Colors.cyan)
+Colors.YELLOW = Colors(Colors.yellow)
+Colors.GREY = Colors(Colors.grey)
+Colors.RED = Colors(Colors.red)
 
 class Offer(BaseModel):
   ID:str
@@ -98,6 +111,8 @@ import json
 _CIDFILE='RUNNING.CID'
 class RentState(BaseModel):
   running_cid:int
+  install_ssh_key:bool=False
+  complete_first_command:bool=False
 
   @classmethod
   def load(cls):

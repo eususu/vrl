@@ -95,6 +95,19 @@ class VastAPI():
     except Exception as e:
       pass
 
+  def is_running(self):
+    if self.rentState and self.rentState.running_cid:
+      return True
+    return False
+
+  def print_rent_state(self):
+    if not self.is_running():
+      print(Colors.GREY.to_str("현재 임대중인 장치가 없습니다"))
+      return
+
+    print("Running CID=" + Colors.CYAN.to_str(self.rentState.running_cid))
+    print("installed ssh key=" + Colors.CYAN.to_str(self.rentState.install_ssh_key))
+
 
   def __parse_instances(self, lines:str)->List[Instance]:
     instances = []
@@ -112,12 +125,13 @@ class VastAPI():
 
     return instances
 
-  def get_instance(self, cid:str)->Instance:
+  def get_instance(self)->Instance:
+    cid = self.rentState.running_cid
     try:
       lines = self.api.show_instance(id=cid)
     except:
       return None
-    print(lines)
+    logging.debug(lines)
     return self.__parse_instances(lines)[0]
 
   def get_instances(self)->List[Instance]:
@@ -147,7 +161,6 @@ class VastAPI():
     logging.debug(offer_conditions)
     offers_str = self.api.search_offers(query=' '.join(offer_conditions), order=order)
     offers = parse_offers(offers_str)
-    print(offers)
     if len(offers) == 0:
       raise Exception(f"there are no available GPU({_gpu_name}x{num_of_gpu}).")
 
@@ -161,14 +174,13 @@ class VastAPI():
     self.selected_offer.print_summary()
 
 
-  def create_instance(self, title:str, disk:int)->RentState:
+  def create_instance(self, title:str, disk:int):
     result = self.api.create_instance(
       ID=self.selected_offer.ID,
       label=title,
       disk=disk,
       image="vllm/vllm-openai:latest",
       )
-
 
     logging.debug(f'create instance result={result}')
 
@@ -179,13 +191,11 @@ class VastAPI():
       logging.error(res)
       raise Exception(f"failed to create instance")
 
-    with open('RUNNING.CID', 'w') as f:
-      f.write(str(res['new_contract']))
-
     running_cid = res['new_contract']
     rentState = RentState(running_cid=running_cid)
     rentState.save()
-    return rentState
+    self.rentState = rentState
+    return
 
   def _checkInstance(self):
     if self.rentState is None:
@@ -250,12 +260,15 @@ class VastAPI():
     ssh_exec_command_by_api(url, [cmd])
     
 
-  def init_ssh(self, cid:int, ssh_key:str, pkey:str):
-    res = self.api.attach_ssh(instance_id=cid, ssh_key=ssh_key)
-    # injection can be completed immediately
-    print(res)
+  def init_ssh(self, ssh_key:str, pkey:str):
+    cid = self.rentState.running_cid
     url = self.api.ssh_url(id=cid)
-    print(url)
+    print(Colors.GREY.to_str(url))
+
+    if not self.rentState.install_ssh_key:
+      print(Colors.CYAN.to_str('SSH 키를 서버에 등록합니다'))
+      res = self.api.attach_ssh(instance_id=cid, ssh_key=ssh_key)
+      print(res)
 
     scheme_and_etc = url.split('://')
     user_and_host = scheme_and_etc[1].split('@')
@@ -265,10 +278,9 @@ class VastAPI():
     host = host_and_port[0]
     port = int(host_and_port[1])
 
-    print(f'user is {user}')
-    print(f'host is {host}')
-    print(f'port is {port}')
-
+    #print(f'user is {user}')
+    #print(f'host is {host}')
+    #print(f'port is {port}')
 
     import paramiko
     from scp import SCPClient
@@ -280,6 +292,8 @@ class VastAPI():
       try:
         logging.info("waiting apply SSH key pair")
         ssh.connect(host, port=port, username=user, pkey=pkey)
+        self.rentState.install_ssh_key = True
+        self.rentState.save()
         logging.info("confirm applied SSH key pair")
         break
       except Exception as e:

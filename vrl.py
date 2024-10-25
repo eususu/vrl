@@ -21,28 +21,21 @@ logging.getLogger('paramiko').setLevel(logging.WARNING)
 class VRL():
   api:VastAPI
   selected_offer:Offer
-  rentState:RentState
 
   def __init__(self):
-    self.rentState = RentState.load()
     self.api = VastAPI()
 
   def __init_container(self, options:RentOptions, init_commands:List[str]=None):
     try:
-      if self.rentState is not None:
-        instance = self.api.get_instance(self.rentState.running_cid)
+      if self.api.is_running():
+        instance = self.api.get_instance()
         if instance is not None:
           raise AlreadyExistInstance()
 
-
       self.api.search_offer(options.favor_gpu, options.num_gpus, min_down=options.min_down)
-      print("search offer")
-      self.rentState = self.api.create_instance(title=options.title, disk=options.disk)
+      self.api.create_instance(title=options.title, disk=options.disk)
     except AlreadyExistInstance as ae:
       pass
-
-    cid = self.rentState.running_cid
-    logging.info(f'Running CID({cid})')
 
     from tqdm import tqdm
     import time
@@ -50,7 +43,7 @@ class VRL():
     start_time = time.time()
     with tqdm(desc=f"인스턴스(GPU={options.favor_gpu} x{options.num_gpus}) 준비 중", unit="초") as pbar:
         while True:
-            instance = self.api.get_instance(cid)
+            instance = self.api.get_instance()
             pbar.set_postfix_str(f"상태: {instance.Status}")
 
             if instance.Status == 'running':
@@ -64,13 +57,17 @@ class VRL():
             pbar.update(1)
     
     if instance.Status == 'running':
-        logging.info(f'## {Colors.to_str(Colors.CYAN, "인스턴스가 준비되었습니다")}')
+        logging.info(f'## {Colors.CYAN.to_str("인스턴스가 준비되었습니다")}')
     else:
-        logging.error(f'## {Colors.to_str(Colors.RED, "인스턴스 준비 실패")}')
+        logging.error(f'## {Colors.RED.to_str("인스턴스 준비 실패")}')
+
     ssh_key, pkey = read_ssh_key()
-    self.api.init_ssh(cid=cid, ssh_key=ssh_key, pkey=pkey)
+    self.api.init_ssh(ssh_key=ssh_key, pkey=pkey)
     self.api.launch_jobs(jobs=init_commands)
 
+
+  def status(self):
+    self.api.print_rent_state()
 
   def shell(self, cmd:str):
     return self.api.shell(cmd=cmd)
@@ -137,12 +134,17 @@ class VRL():
     self.api.destroy_instance()
 
 
+
+##########################################################
+vrl:VRL = VRL()
+def status(args:argparse.Namespace):
+  vrl.status()
+
 def rent(args:argparse.Namespace):
   import socket
   hostname=socket.gethostname()
   username = os.getenv('USER') or os.getenv('USERNAME')
 
-  vrl = VRL()
 
   options = RentOptions(
     title=f"{hostname}_{username}",
@@ -157,19 +159,18 @@ def rent(args:argparse.Namespace):
   vrl.shell('ls -al')
 
 def stop(args:argparse.Namespace):
-  vrl = VRL()
   vrl.stop()
 
 def search(args:argparse.Namespace):
-  vrl = VRL()
   vrl.search(args.gpu, args.num_gpu, min_down=args.min_down)
 
 def ssh(args:argparse.Namespace):
-  vrl = VRL()
   vrl.ssh()
 
 parser = argparse.ArgumentParser()
 subparsers = parser.add_subparsers(title='commands', dest='command')
+status_parser = subparsers.add_parser('status', help='현재 상태를 확인합니다')
+status_parser.set_defaults(func=status)
 rent_parser = subparsers.add_parser('rent', help='설정된 조건에 맞는 장비를 임대합니다.')
 rent_parser.set_defaults(func=rent)
 rent_parser.add_argument('-gpu', type=str, help='임대를 원하는 GPU의 이름을 입력합니다.(h100, a100, 4090)', required=True)
