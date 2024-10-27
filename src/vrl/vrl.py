@@ -91,6 +91,10 @@ class VRL():
     self.api.launch_jobs(jobs=commands)
 
   def ssh(self):
+    if not self.api.is_running():
+      self.api.print_rent_state()
+      exit(1)
+
     import subprocess
 
     cmds =[

@@ -58,10 +58,9 @@ class Offer(BaseModel):
   country:str
 
   def print_summary(self):
-    print(f'{Colors.CYAN}{self.Model} {Colors.YELLOW}${self.price}{Colors.DEFAULT} - {Colors.GREY}{self}{Colors.DEFAULT}')
-    logging.info(f'{Colors.CYAN}{self.Model} {Colors.YELLOW}${self.price}{Colors.DEFAULT} - {Colors.GREY}{self}{Colors.DEFAULT}')
+    print(f'{Colors.CYAN.to_str(self.Model)} {Colors.YELLOW.to_str(self.price)} - {Colors.GREY.to_str(self)}')
+    logging.info(f'{Colors.CYAN.to_str(self.Model)} {Colors.YELLOW.to_str(self.price)} - {Colors.GREY.to_str(self)}')
     
-
 
 class Instance(BaseModel):
   ID:str
