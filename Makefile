@@ -1,32 +1,38 @@
 all: status
 
 status:
-	python3 -m vrl status
+	vrl status
 
 rent:
-	python3 -m vrl rent -gpu 4090
+	vrl rent -gpu 4090
 
 search:
-	python3 -m vrl search -gpu 6000 -num_gpu 8
+	vrl search -gpu 6000 -num_gpu 8
 
 bash:
-	python3 -m vrl shell
+	vrl shell
 
 ssh:
-	python3 -m vrl ssh
+	vrl ssh
 
 shell:
-	python3 -m vrl shell nvidia-smi
+	vrl shell nvidia-smi
 
 eval:
-	python3 -m vrl logickor
+	vrl logickor
 
 scp:
-	python3 -m vrl scp ./LogicKor/evaluated/default.jsonl .
+	vrl scp ./LogicKor/evaluated/default.jsonl .
 
 stop:
-	python3 -m vrl stop
-
+	vrl stop
 
 tt:
-	python3 -m trainer.train
+	trainer.train
+
+build:
+	python3 -m build
+	pip install -e .
+
+install:
+	python3 setup.py install

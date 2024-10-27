@@ -4,7 +4,7 @@ import subprocess
 import asyncio, asyncssh, sys
 from typing import List, Tuple
 
-from _types import Colors
+from vrl._types import Colors
 
 import paramiko
 

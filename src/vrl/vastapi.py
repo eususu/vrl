@@ -7,8 +7,8 @@ import paramiko
 from pydantic import BaseModel
 from vastai import VastAI
 
-from _ssh import read_ssh_key, ssh_exec_command_by_api
-from _types import Colors, Instance, Offer, RentState
+from vrl._ssh import read_ssh_key, ssh_exec_command_by_api
+from vrl._types import Colors, Instance, Offer, RentState
 
 
 
@@ -180,6 +180,7 @@ class VastAPI():
       label=title,
       disk=disk,
       image="vllm/vllm-openai:latest",
+      env="HF_TOKEN=1234",
       )
 
     logging.debug(f'create instance result={result}')
