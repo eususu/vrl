@@ -12,6 +12,7 @@ asyncssh = "*"
 accelerate = "*"
 paramiko = "*"
 scp = "*"
+build = "*"
 
 [dev-packages]
 

@@ -52,6 +52,18 @@ def get_config(run_name:str):
         load_in_n_bit= 8,
     )
 
+    datasets = [
+    'kuotient/orca-math-korean-dpo-pairs',
+    'aiyets/argilla_dpo-mix-7k-ko',
+    ]
+
+    # WANDB 설정
+    wandb_config = WandBConfig(
+        project=project_info.project_name,
+        name=run_name,
+    )
+    wandb_config=None
+
     # unsloth 설정
     unsloth_config = UnslothConfig(
         base_model_name=model_info.base_name,
@@ -69,17 +81,6 @@ def get_config(run_name:str):
     )
     unsloth_config = None
 
-    # WANDB 설정
-    wandb_config = WandBConfig(
-        project="dpotest",
-        name=run_name,
-    )
-    wandb_config=None
-
-    datasets = [
-    'kuotient/orca-math-korean-dpo-pairs',
-    'aiyets/argilla_dpo-mix-7k-ko',
-    ]
 
     # TRL 설정
     dpo_args = DPOConfig(

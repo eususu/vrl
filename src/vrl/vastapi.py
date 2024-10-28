@@ -180,7 +180,6 @@ class VastAPI():
       label=title,
       disk=disk,
       image="vllm/vllm-openai:latest",
-      env="HF_TOKEN=1234",
       )
 
     logging.debug(f'create instance result={result}')

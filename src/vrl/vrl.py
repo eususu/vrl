@@ -60,6 +60,7 @@ class VRL():
         logging.info(f'## {Colors.CYAN.to_str("인스턴스가 준비되었습니다")}')
     else:
         logging.error(f'## {Colors.RED.to_str("인스턴스 준비 실패")}')
+        return
 
     ssh_key, pkey = read_ssh_key()
     self.api.init_ssh(ssh_key=ssh_key, pkey=pkey)
@@ -86,7 +87,7 @@ class VRL():
     commands = [
       f'echo export HF_TOKEN={token} >> ~/.profile',
       f'echo export WANDB_API_KEY={wandb_apikey} >> ~/.profile',
-      'pip install accelerate trl peft xformers wandb deepspeed flash-attn',
+      'pip install accelerate trl peft xformers wandb flash-attn',
       ]
     self.api.launch_jobs(jobs=commands)
 

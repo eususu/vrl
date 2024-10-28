@@ -7,7 +7,7 @@ rent:
 	vrl rent -gpu 4090
 
 search:
-	vrl search -gpu 6000 -num_gpu 8
+	vrl search -gpu h100 -num_gpu 8
 
 bash:
 	vrl shell
