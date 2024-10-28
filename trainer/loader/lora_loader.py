@@ -3,7 +3,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model
 
 
-def lora_load():
+def lora_load(device_id):
     from trainer.config import get_config
     project_info, model_info, unsloth_config, wandb_config, datasets, training_args, lora_config = get_config()
     if not isinstance(lora_config, LoraConfig):
@@ -22,7 +22,7 @@ def lora_load():
     model = AutoModelForCausalLM.from_pretrained(model_info.base_name,
       torch_dtype=torch.bfloat16,
       quantization_config=quantization_config,
-      device_map="auto",
+      device_map=device_id,
       attn_implementation=model_info.attn_implementation,
       )
     model.config.use_cache = False

@@ -6,6 +6,12 @@ from .normal_loader import normal_load
 from .lora_loader import lora_load
 from .unsloth_loader import unsloth_load
 
+from accelerate import Accelerator
+from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
+
+accelerator = Accelerator()
+device_id = accelerator.local_process_index
+
 
 def load():
   if unsloth_config is not None:
@@ -13,10 +19,10 @@ def load():
   else:
       if model_info.load_in_n_bit == 16:
           print(f"### training ###")
-          model, tokenizer = normal_load()
+          model, tokenizer = normal_load(device_id=device_id)
       else:
           print(f"### LORA {model_info.load_in_n_bit} bit training ###")
-          model, tokenizer = lora_load()
+          model, tokenizer = lora_load(device_id=device_id)
   
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   model.to(device) # multi gpu 환경에서 종종 이게 필요함

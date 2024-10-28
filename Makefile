@@ -4,7 +4,7 @@ status:
 	vrl status
 
 rent:
-	vrl rent -gpu 4090
+	vrl rent -gpu h100 -num_gpu 4 -disk 500
 
 search:
 	vrl search -gpu h100 -num_gpu 8
