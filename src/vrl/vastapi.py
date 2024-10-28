@@ -142,7 +142,7 @@ class VastAPI():
     rentState = RentState.load()
     self.rentState = rentState
 
-  def search_offer(self, gpu_name:str, num_of_gpu:int, min_down:int=None):
+  def search_offer(self, gpu_name:str, num_of_gpu:int, min_down:int=None, min_up:int=None):
     _gpu_name, min_gpu_ram = retrieve_gpu_model(gpu_name)
     order='-inet_down'
     order='+dph'
@@ -154,6 +154,8 @@ class VastAPI():
     # 요구하는 gpu ram에 따라 장치를 선택하게 해야함
     if min_down:
       offer_conditions.append(f'inet_down > {min_down}')
+    if min_up:
+      offer_conditions.append(f'inet_up > {min_up}')
     if min_gpu_ram:
       offer_conditions.append(f'gpu_ram>={min_gpu_ram}')
     offer_conditions.append(f'num_gpus={num_of_gpu}')
@@ -297,6 +299,8 @@ class VastAPI():
         logging.info("confirm applied SSH key pair")
         break
       except Exception as e:
+        import time
+        time.sleep(1)
         continue
 
 

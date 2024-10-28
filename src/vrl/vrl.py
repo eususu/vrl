@@ -32,7 +32,7 @@ class VRL():
         if instance is not None:
           raise AlreadyExistInstance()
 
-      self.api.search_offer(options.favor_gpu, options.num_gpus, min_down=options.min_down)
+      self.api.search_offer(options.favor_gpu, options.num_gpus, min_down=options.min_down, min_up=options.min_up)
       self.api.create_instance(title=options.title, disk=options.disk)
     except AlreadyExistInstance as ae:
       pass
@@ -87,7 +87,8 @@ class VRL():
     commands = [
       f'echo export HF_TOKEN={token} >> ~/.profile',
       f'echo export WANDB_API_KEY={wandb_apikey} >> ~/.profile',
-      'pip install accelerate trl peft xformers wandb flash-attn',
+      'echo export HF_HUB_ENABLE_HF_TRANSFER=1 >> ~/.profile',
+      'pip install accelerate trl peft wandb',
       ]
     self.api.launch_jobs(jobs=commands)
 

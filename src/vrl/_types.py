@@ -8,6 +8,7 @@ class RentOptions(BaseModel):
   num_gpus:int=1
   disk:int
   min_down:int
+  min_up:int
   init_timeout:int
 
 
