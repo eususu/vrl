@@ -60,9 +60,9 @@ rent_parser = subparsers.add_parser('rent', help='설정된 조건에 맞는 장
 rent_parser.set_defaults(func=rent)
 rent_parser.add_argument('-gpu', type=str, help='임대를 원하는 GPU의 이름을 입력합니다.(h100, a100, 4090)', required=True)
 rent_parser.add_argument('-num_gpu', type=int, default=1, help='임대를 원하는 GPU의 개수를 입력합니다.')
-rent_parser.add_argument('-disk', type=int, default=50, help='임대를 원하는 디스크 용량을 GB 단위로 입력합니다(기본 50GB).')
+rent_parser.add_argument('-disk', type=int, default=100, help='임대를 원하는 디스크 용량을 GB 단위로 입력합니다(기본 100GB).')
 rent_parser.add_argument('-min_down', type=int, default=1000, help='네트워크 다운로드 속도의 최하치를 Mbps 단위로 입력합니다(기본:800)')
-rent_parser.add_argument('-init_timeout', type=int, default=120, help='지정된 시간동안 인스턴스를 생성하지 못하면 중단합니다(기본:120 초)')
+rent_parser.add_argument('-init_timeout', type=int, default=300, help='지정된 시간동안 인스턴스를 생성하지 못하면 중단합니다(기본:300 초)')
 rent_parser.add_argument('-min_up', type=int, default=800, help='네트워크 업로드 속도의 최하치를 Mbps 입력합니다')
 
 ssh_parser = subparsers.add_parser('ssh', help='ssh에 접속합니다')
