@@ -10,6 +10,7 @@ class RentOptions(BaseModel):
   min_down:int
   min_up:int
   init_timeout:int
+  auto_connect:bool
 
 
 class Colors:

@@ -38,6 +38,7 @@ def rent(args:argparse.Namespace):
     min_down=args.min_down,
     min_up=args.min_up,
     init_timeout=args.init_timeout,
+    auto_connect=args.auto_connect,
   )
   print(f'gogo rent:{args}')
   vrl.rent(options=options)
@@ -64,6 +65,7 @@ rent_parser.add_argument('-disk', type=int, default=100, help='임대를 원하�
 rent_parser.add_argument('-min_down', type=int, default=1000, help='네트워크 다운로드 속도의 최하치를 Mbps 단위로 입력합니다(기본:800)')
 rent_parser.add_argument('-init_timeout', type=int, default=300, help='지정된 시간동안 인스턴스를 생성하지 못하면 중단합니다(기본:300 초)')
 rent_parser.add_argument('-min_up', type=int, default=800, help='네트워크 업로드 속도의 최하치를 Mbps 입력합니다')
+rent_parser.add_argument('-ac', '--auto_connect', action='store_true', default=False, help='임대 완료 후 바로 SSH 접속을 수행합니다')
 
 ssh_parser = subparsers.add_parser('ssh', help='ssh에 접속합니다')
 ssh_parser.set_defaults(func=ssh)

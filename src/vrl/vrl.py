@@ -80,17 +80,30 @@ class VRL():
       print(ae)
 
   def rent(self, options:RentOptions):
-    token = os.environ["HF_TOKEN"]
-    wandb_apikey = os.environ["WANDB_API_KEY"]
+    token = os.getenv("HF_TOKEN")
+    openai_apikey = os.getenv("OPENAI_API_KEY")
+    wandb_apikey = os.getenv("WANDB_API_KEY")
     self.__init_container(options)
 
-    commands = [
-      f'echo export HF_TOKEN={token} >> ~/.profile',
-      f'echo export WANDB_API_KEY={wandb_apikey} >> ~/.profile',
-      'echo export HF_HUB_ENABLE_HF_TRANSFER=1 >> ~/.profile',
-      'pip install accelerate trl peft wandb',
-      ]
+    commands = [ ]
+    commands.append('echo export HF_HUB_ENABLE_HF_TRANSFER=1 >> ~/.profile')
+
+    if token:
+      logging.info('Passing HF_TOKEN to remote')
+      commands.append(f'echo export HF_TOKEN={token} >> ~/.profile')
+    if wandb_apikey:
+      logging.info('Passing WANDB_API_KEY to remote')
+      commands.append(f'echo export WANDB_API_KEY={wandb_apikey} >> ~/.profile')
+    if openai_apikey:
+      logging.info('Passing OPENAI_API_KEY to remote')
+      commands.append(f'echo export OPENAI_API_KEY={openai_apikey} >> ~/.profile')
+
+    #commands.append('pip install accelerate trl peft wandb')
+
     self.api.launch_jobs(jobs=commands)
+
+    if options.auto_connect:
+      self.ssh()
 
   def ssh(self):
     if not self.api.is_running():
@@ -104,7 +117,7 @@ class VRL():
       '-oStrictHostKeyChecking=no',
       self.api.sshurl()
     ]
-    print(cmds)
+    logging.info(cmds)
     subprocess.call(cmds)
 
   def scp(self, remote:str, local:str):
@@ -136,5 +149,6 @@ class VRL():
       #'SCP LogicKor/evaluated/*.jsonl .',
     ]
     self.api.launch_jobs(jobs=commands)
+
   def stop(self):
     self.api.destroy_instance()
