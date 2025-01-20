@@ -55,8 +55,12 @@ def ssh(args:argparse.Namespace):
 
 parser = argparse.ArgumentParser()
 subparsers = parser.add_subparsers(title='commands', dest='command')
+
+### STATUS
 status_parser = subparsers.add_parser('status', help='현재 상태를 확인합니다')
 status_parser.set_defaults(func=status)
+
+### RENT
 rent_parser = subparsers.add_parser('rent', help='설정된 조건에 맞는 장비를 임대합니다.')
 rent_parser.set_defaults(func=rent)
 rent_parser.add_argument('-gpu', type=str, help='임대를 원하는 GPU의 이름을 입력합니다.(h100, a100, 4090)', required=True)
@@ -67,17 +71,23 @@ rent_parser.add_argument('-init_timeout', type=int, default=300, help='지정된
 rent_parser.add_argument('-min_up', type=int, default=800, help='네트워크 업로드 속도의 최하치를 Mbps 입력합니다')
 rent_parser.add_argument('-ac', '--auto_connect', action='store_true', default=False, help='임대 완료 후 바로 SSH 접속을 수행합니다')
 
+### SSH
 ssh_parser = subparsers.add_parser('ssh', help='ssh에 접속합니다')
 ssh_parser.set_defaults(func=ssh)
 
+### STOP
 stop_parser = subparsers.add_parser('stop', help='임대된 장비를 반납합니다')
 stop_parser.set_defaults(func=stop)
 
+### SEARCH
 search_parser = subparsers.add_parser('search', help='설정된 조건에 맞는 장비를 조회합니다.')
 search_parser.add_argument('-gpu', type=str, help='임대를 원하는 GPU의 이름을 입력합니다.(h100, a100, 4090)', required=True)
 search_parser.add_argument('-num_gpu', type=int, default=1, help='임대를 원하는 GPU의 개수를 입력합니다.')
 search_parser.add_argument('-min_down', type=int, default=800, help='네트워크 다운로드 속도의 최하치를 Mbps 단위로 입력합니다(기본:800)')
 search_parser.set_defaults(func=search)
+
+### SCP
+scp_parser = subparsers.add_parser('scp', help='주어진 파일을 임대된 서버에 복사합니다.')
 
 
 
